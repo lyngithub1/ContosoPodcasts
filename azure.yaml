@@ -1,0 +1,37 @@
+# Azure Developer CLI (azd) configuration.
+#
+# Provides an alternative, azd-driven path to the same deployment the CI/CD
+# workflows perform imperatively. `azd up` provisions the Bicep in infra/bicep
+# and deploys both services.
+#
+# HONESTY NOTE: the current Bicep (infra/bicep) codifies most — but not all — of
+# the live environment. Document Intelligence and the private endpoints added in
+# the latest iteration were created imperatively and are NOT yet in Bicep, so an
+# `azd provision` against a clean subscription would stand up a slightly reduced
+# stack until those are back-ported. `azd deploy` (image + SPA only) matches the
+# live environment today. See docs/CI-CD.md and KNOWN_LIMITATIONS.md.
+name: azure-scientific-podcast-studio
+metadata:
+  template: azure-scientific-podcast-studio@0.1.0
+
+infra:
+  provider: bicep
+  path: infra/bicep
+  module: main
+
+services:
+  api:
+    project: apps/api
+    language: ts
+    host: containerapp
+    # The API Dockerfile builds from the apps/api context alone (it vendors the
+    # workflow logic rather than resolving the private @studio/domain workspace).
+    docker:
+      path: Dockerfile
+      context: .
+      remoteBuild: true # build in ACR (az acr build), matching the CI/CD workflow
+  web:
+    project: apps/web
+    language: ts
+    host: staticwebapp
+    dist: dist

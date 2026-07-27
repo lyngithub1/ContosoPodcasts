@@ -1,0 +1,115 @@
+{
+  "$comment": "Pronunciation candidates seeded as REVIEW CANDIDATES only. No entry is an authoritative 'correct' pronunciation. Each carries approvalStatus + rationale/provenance and must be approved by an authorized reviewer before it influences synthesis (Spec Section 13).",
+  "entries": [
+    {
+      "canonicalForm": "Doravirine",
+      "locale": "de-DE",
+      "spokenForm": "Do-ra-vi-rin",
+      "ipa": "ˌdoːʁaviˈʁiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NNRTI"],
+      "approvalStatus": "draft",
+      "rationale": "INN-based candidate; German narration. Requires reviewer confirmation.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Islatravir",
+      "locale": "de-DE",
+      "spokenForm": "Is-la-tra-vir",
+      "ipa": "ɪsˈlatʁaviːɐ̯",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NRTTI", "investigational"],
+      "approvalStatus": "draft",
+      "rationale": "Investigational agent; pronunciation candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Bictegravir",
+      "locale": "de-DE",
+      "spokenForm": "Bik-te-gra-vir",
+      "ipa": "bɪkˈteːɡʁaviːɐ̯",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "INSTI"],
+      "approvalStatus": "draft",
+      "rationale": "Comparator agent; candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Emtricitabin",
+      "locale": "de-DE",
+      "spokenForm": "Em-tri-ci-ta-bin",
+      "ipa": "ɛmtʁit͡siˈtaːbiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NRTI"],
+      "approvalStatus": "draft",
+      "rationale": "German spelling variant of emtricitabine. Candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Tenofovir-Alafenamid",
+      "locale": "de-DE",
+      "spokenForm": "Te-no-fo-vir A-la-fe-na-mid",
+      "ipa": "teˈnoːfoviːɐ̯ alafeˈnaːmɪt",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NRTI", "prodrug"],
+      "approvalStatus": "draft",
+      "rationale": "Compound drug name; hyphenated German form. Candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "HIV-1 RNA",
+      "locale": "de-DE",
+      "spokenForm": "H-I-V-eins R-N-A",
+      "ipa": null,
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["acronym", "lab", "spell-out"],
+      "approvalStatus": "draft",
+      "rationale": "Say-as characters for HIV; ordinal 'eins'. Candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "CD4",
+      "locale": "de-DE",
+      "spokenForm": "C-D-vier",
+      "ipa": null,
+      "therapeuticArea": "Immunology",
+      "tags": ["acronym", "lab", "spell-out"],
+      "approvalStatus": "draft",
+      "rationale": "Spell-out with cardinal 'vier'. Candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "DRESS",
+      "locale": "de-DE",
+      "spokenForm": "dress",
+      "ipa": "dʁɛs",
+      "therapeuticArea": "Dermatology / Adverse events",
+      "tags": ["acronym", "adverse-event", "read-as-word"],
+      "approvalStatus": "draft",
+      "rationale": "DRESS syndrome often read as a word. Confirm intended treatment.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "HBV",
+      "locale": "de-DE",
+      "spokenForm": "H-B-V",
+      "ipa": null,
+      "therapeuticArea": "Hepatology / Infectious disease",
+      "tags": ["acronym", "spell-out"],
+      "approvalStatus": "draft",
+      "rationale": "Hepatitis B virus; spell-out candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "NCT04233879",
+      "locale": "de-DE",
+      "spokenForm": "N-C-T null vier zwei drei drei acht sieben neun",
+      "ipa": null,
+      "therapeuticArea": "Clinical trials",
+      "tags": ["trial-id", "spell-out"],
+      "approvalStatus": "draft",
+      "rationale": "Illustrative ClinicalTrials.gov identifier for demo; verify before use.",
+      "inGoldenSet": false
+    }
+  ]
+}

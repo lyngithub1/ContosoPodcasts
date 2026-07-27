@@ -1,0 +1,34 @@
+{
+  "name": "@studio/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain API for the Azure Scientific Podcast Studio — real Cosmos persistence, Azure AI Speech synthesis, and Foundry model adapters behind managed identity.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/identity": "^4.5.0",
+    "@azure/service-bus": "^7.9.5",
+    "@azure/storage-blob": "^12.26.0",
+    "@fastify/cors": "^9.0.1",
+    "fastify": "^4.28.1",
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

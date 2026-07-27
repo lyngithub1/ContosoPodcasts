@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+coverage/
+
+# Vite
+apps/web/dist/
+
+# Env & secrets — never commit
+.env
+.env.*
+!.env.example
+*.local
+
+# Local environment coordinates for the ops scripts (subscription ids, resource
+# names, endpoints). Never commit — use infra/_env.local.ps1.example as the guide.
+infra/_env.local.ps1
+
+# Runtime artifacts written by the infra/ scripts
+infra/_ids.json
+infra/_*.log
+
+# Internal-only collateral — commercial sizing / ROM cost estimates.
+# Must never reach a repo that may be shared with a customer.
+docs/podcast-studio-mcem-cost-model.html
+docs/**/*mcem*
+docs/**/*cost-model*
+docs/**/*-internal.*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Azure
+.azure/
+*.publishsettings

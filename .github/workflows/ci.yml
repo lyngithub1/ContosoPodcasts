@@ -1,0 +1,44 @@
+# Continuous integration — typecheck, unit tests, and build for the monorepo.
+# Runs on every pull request and on pushes to main. No Azure credentials needed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck (all workspaces)
+        run: npm run typecheck
+
+      - name: Unit tests (domain + ssml + api)
+        run: npm test
+
+      - name: Build (domain, ssml, web)
+        run: npm run build
+
+      - name: Build API
+        run: npm run build:api

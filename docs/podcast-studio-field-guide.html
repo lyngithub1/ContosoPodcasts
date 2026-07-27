@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Azure Scientific Podcast Studio — Platform Field Guide</title>
+<!-- Theme detection FIRST (layout contract) -->
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+    const theme = param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+  /* ============ Azure + Foundry brand tokens ============ */
+  :root {
+    --azure-blue:   #0078D4;
+    --azure-hover:  #106EBE;
+    --azure-navy:   #243A5E;
+    --azure-cyan:   #50E6FF;
+    --foundry-purple:#8661C5;
+    --foundry-magenta:#D33B7D;
+    --ms-green:     #107C10;
+    --ms-amber:     #F7A90A;
+    --ms-red:       #D13438;
+
+    --foundry-grad: linear-gradient(120deg, #0078d4 0%, #4f52c9 42%, #8661c5 68%, #d33b7d 100%);
+
+    --bg:        #f3f6fb;
+    --surface:   #ffffff;
+    --surface-2: #eef2f9;
+    --border:    #dbe2ec;
+    --text:      #1B1A19;
+    --text-soft: #57606a;
+    --accent:    var(--azure-blue);
+    --accent-2:  var(--foundry-purple);
+    --code-bg:   #f4f2fb;
+    --shadow:    0 2px 6px rgba(23,42,70,.06), 0 8px 24px rgba(23,42,70,.08);
+    --nav-w: 268px;
+  }
+  html[data-theme="dark"] {
+    --bg:        #11151C;
+    --surface:   #1C2330;
+    --surface-2: #232c3c;
+    --border:    #2c3648;
+    --text:      #e9eef6;
+    --text-soft: #9fb0c6;
+    --accent:    #50B0F8;
+    --accent-2:  #b18be6;
+    --code-bg:   #232033;
+    --shadow:    0 2px 6px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    background: var(--code-bg);
+    padding: .12em .42em;
+    border-radius: 5px;
+    font-size: .86em;
+    color: var(--accent-2);
+  }
+
+  /* ============ Top bar ============ */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 20px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; white-space: nowrap; }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--foundry-grad);
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
+    box-shadow: var(--shadow);
+  }
+  .brand small { display:block; font-weight: 500; font-size: 11px; color: var(--text-soft); }
+  .topbar .spacer { flex: 1; }
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; min-width: 180px; max-width: 340px; flex: 1;
+  }
+  .search input { border: none; background: transparent; outline: none; color: var(--text); width: 100%; font-size: 14px; }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent); }
+
+  /* ============ Shell ============ */
+  .shell { display: grid; grid-template-columns: var(--nav-w) 1fr; gap: 0; max-width: 1500px; margin: 0 auto; }
+  nav.side {
+    position: sticky; top: 52px; align-self: start;
+    height: calc(100vh - 52px); overflow-y: auto;
+    padding: 20px 12px 60px; border-right: 1px solid var(--border);
+  }
+  nav.side .group { margin-bottom: 16px; }
+  nav.side .group-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--text-soft); font-weight: 700; padding: 4px 12px; opacity: .85;
+  }
+  nav.side a {
+    display: block; padding: 6px 12px; border-radius: 7px;
+    color: var(--text-soft); font-size: 13.5px; font-weight: 500; border-left: 2px solid transparent;
+  }
+  nav.side a:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
+  nav.side a.active {
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-left-color: var(--accent); font-weight: 600;
+  }
+  main { padding: 28px 40px 120px; min-width: 0; }
+
+  /* ============ Hero ============ */
+  .hero {
+    border-radius: 20px; padding: 40px 36px; color: #fff; position: relative; overflow: hidden;
+    background: var(--foundry-grad); box-shadow: var(--shadow); margin-bottom: 26px;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(1200px 300px at 90% -20%, rgba(80,230,255,.35), transparent 60%);
+  }
+  .hero h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: -.02em; position: relative; }
+  .hero p.tag { margin: 0 0 18px; font-size: 16px; opacity: .95; max-width: 760px; position: relative; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
+  .chip {
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28);
+    padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; backdrop-filter: blur(4px);
+  }
+
+  /* ============ Sections ============ */
+  section { scroll-margin-top: 68px; margin: 34px 0; }
+  h2.sec {
+    font-size: 22px; display: flex; align-items: center; gap: 12px; margin: 0 0 16px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  }
+  h2.sec .num {
+    font-size: 15px; font-weight: 800; -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; background-image: var(--foundry-grad);
+    border: 2px solid var(--border); border-radius: 9px; width: 34px; height: 34px;
+    display: grid; place-items: center; flex: none;
+  }
+  h3.sub { font-size: 16px; margin: 22px 0 10px; color: var(--azure-navy); }
+  html[data-theme="dark"] h3.sub { color: var(--azure-cyan); }
+  p.lead { color: var(--text-soft); max-width: 900px; }
+
+  /* ============ Cards / grids ============ */
+  .grid { display: grid; gap: 14px; margin: 14px 0; }
+  .cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .card h4 { margin: 0 0 6px; font-size: 14.5px; display: flex; align-items: center; gap: 8px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--text-soft); }
+  .card .kbadge { font-size: 11px; font-weight: 700; color: var(--accent); }
+
+  /* ============ Stats band ============ */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat .n {
+    font-size: 30px; font-weight: 800; line-height: 1;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    background-image: var(--foundry-grad);
+  }
+  .stat .l { font-size: 12px; color: var(--text-soft); margin-top: 6px; font-weight: 600; }
+
+  /* ============ Pills ============ */
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+  /* status */
+  .pill.ga     { background: color-mix(in srgb, var(--ms-green) 16%, transparent); color: var(--ms-green); border-color: color-mix(in srgb, var(--ms-green) 40%, transparent); }
+  .pill.prev   { background: color-mix(in srgb, var(--ms-amber) 18%, transparent); color: #9a6a00; border-color: color-mix(in srgb, var(--ms-amber) 45%, transparent); }
+  html[data-theme="dark"] .pill.prev { color: var(--ms-amber); }
+  .pill.new    { background: color-mix(in srgb, var(--foundry-magenta) 15%, transparent); color: var(--foundry-magenta); border-color: color-mix(in srgb, var(--foundry-magenta) 40%, transparent); }
+  .pill.must   { background: color-mix(in srgb, var(--ms-red) 14%, transparent); color: var(--ms-red); border-color: color-mix(in srgb, var(--ms-red) 40%, transparent); }
+  .pill.azure  { background: color-mix(in srgb, var(--azure-blue) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--azure-blue) 40%, transparent); }
+  /* discovery / priority / type (red amber green blue purple magenta) */
+  .pill.red    { background: color-mix(in srgb, var(--ms-red) 14%, transparent); color: var(--ms-red); border-color: color-mix(in srgb, var(--ms-red) 40%, transparent); }
+  .pill.amber  { background: color-mix(in srgb, var(--ms-amber) 18%, transparent); color: #9a6a00; border-color: color-mix(in srgb, var(--ms-amber) 45%, transparent); }
+  html[data-theme="dark"] .pill.amber { color: var(--ms-amber); }
+  .pill.green  { background: color-mix(in srgb, var(--ms-green) 16%, transparent); color: var(--ms-green); border-color: color-mix(in srgb, var(--ms-green) 40%, transparent); }
+  .pill.blue   { background: color-mix(in srgb, var(--azure-blue) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--azure-blue) 40%, transparent); }
+  .pill.purple { background: color-mix(in srgb, var(--foundry-purple) 15%, transparent); color: var(--accent-2); border-color: color-mix(in srgb, var(--foundry-purple) 40%, transparent); }
+  .pill.magenta{ background: color-mix(in srgb, var(--foundry-magenta) 15%, transparent); color: var(--foundry-magenta); border-color: color-mix(in srgb, var(--foundry-magenta) 40%, transparent); }
+
+  /* ============ Tables ============ */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; background: var(--surface); }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { background: var(--surface-2); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-soft); position: sticky; top: 0; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ============ Loop / process diagram ============ */
+  .loop { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; margin: 16px 0; }
+  .loop .step {
+    flex: 1 1 140px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; position: relative; box-shadow: var(--shadow); text-align: center;
+  }
+  .loop .step .ico { font-size: 22px; }
+  .loop .step b { display: block; margin-top: 4px; font-size: 14px; }
+  .loop .step small { color: var(--text-soft); font-size: 11.5px; }
+  .loop .arrow { display: grid; place-items: center; color: var(--accent); font-size: 22px; padding: 0 6px; font-weight: 800; }
+  @media (max-width: 900px){ .loop .arrow { transform: rotate(90deg); } }
+
+  /* ============ Architecture stack diagram ============ */
+  .arch { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .layer {
+    border-radius: 12px; padding: 13px 16px; color: #fff; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; box-shadow: var(--shadow); position: relative;
+  }
+  .layer b { font-size: 14.5px; }
+  .layer small { opacity: .92; font-size: 12px; }
+  .layer .lz { font-size: 11px; background: rgba(255,255,255,.2); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .l-edge { background: linear-gradient(100deg,#243A5E,#0078D4); }
+  .l-gate { background: linear-gradient(100deg,#0078D4,#106EBE); }
+  .l-app  { background: linear-gradient(100deg,#106EBE,#4f52c9); }
+  .l-ai   { background: linear-gradient(100deg,#4f52c9,#8661C5); }
+  .l-data { background: linear-gradient(100deg,#8661C5,#D33B7D); }
+  .flowmark { text-align: center; color: var(--accent); font-weight: 800; font-size: 18px; }
+  .gov-band {
+    border: 1.5px dashed var(--accent-2); border-radius: 12px; padding: 10px 16px; margin: 8px 0;
+    background: color-mix(in srgb, var(--accent-2) 8%, transparent); font-size: 12.5px; color: var(--text);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .gov-band b { color: var(--accent-2); }
+
+  .spokes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  .spoke { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+  .spoke h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
+  .spoke ul { margin: 0; padding-left: 16px; font-size: 12.5px; color: var(--text-soft); }
+  .spoke li { margin: 2px 0; }
+
+  /* ============ Landing-zone topology ============ */
+  .lz-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 12px 0 16px; font-size: 12px; }
+  .lz-legend .lg { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 600; }
+  .lz-legend .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .hub-box, .vnet-box {
+    border: 2px solid var(--border); border-radius: 14px; padding: 20px 16px 16px; margin: 16px 0;
+    position: relative; background: color-mix(in srgb, var(--surface) 55%, transparent);
+  }
+  .vnet-box { border-color: color-mix(in srgb, var(--azure-blue) 45%, transparent); }
+  .hub-box  { border-color: color-mix(in srgb, var(--foundry-purple) 45%, transparent); }
+  .box-label {
+    position: absolute; top: -11px; left: 14px; background: var(--bg); padding: 0 10px;
+    font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  }
+  .vnet-box .box-label { color: var(--azure-blue); }
+  html[data-theme="dark"] .vnet-box .box-label { color: var(--accent); }
+  .hub-box .box-label  { color: var(--foundry-purple); }
+  html[data-theme="dark"] .hub-box .box-label { color: var(--accent-2); }
+  .subnet { border: 1px dashed var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+  .subnet h5 { margin: 0 0 8px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-soft); display: flex; justify-content: space-between; align-items: center; }
+  .subnet .nsg { font-size: 9.5px; font-weight: 700; color: var(--ms-green); border: 1px solid color-mix(in srgb, var(--ms-green) 40%, transparent); border-radius: 999px; padding: 1px 7px; }
+  .chiplist { display: flex; flex-wrap: wrap; gap: 6px; }
+  .svc { font-size: 11.5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 3px 8px; display: inline-flex; gap: 5px; align-items: center; color: var(--text); }
+  .svc .z { font-size: 9px; font-weight: 800; padding: 0 4px; border-radius: 4px; line-height: 1.6; }
+  .z-def { background: color-mix(in srgb, var(--ms-green) 20%, transparent); color: var(--ms-green); }
+  .z-zt  { background: color-mix(in srgb, var(--azure-blue) 18%, transparent); color: var(--accent); }
+  .z-pub { background: color-mix(in srgb, var(--foundry-magenta) 16%, transparent); color: var(--foundry-magenta); }
+  .z-opt { background: color-mix(in srgb, var(--ms-amber) 22%, transparent); color: #9a6a00; }
+  html[data-theme="dark"] .z-opt { color: var(--ms-amber); }
+
+  /* ============ Callouts ============ */
+  .callout { border-radius: 12px; padding: 13px 16px; margin: 14px 0; border-left: 4px solid var(--accent); background: var(--surface); box-shadow: var(--shadow); font-size: 13.5px; }
+  .callout.tip  { border-left-color: var(--ms-green); }
+  .callout.warn { border-left-color: var(--ms-amber); }
+  .callout.info { border-left-color: var(--azure-blue); }
+  .callout b { color: var(--accent); }
+
+  /* ============ Code block ============ */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.5;
+    font-family: "Cascadia Code","SF Mono",Consolas,monospace; margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+
+  /* ============ FAQ ============ */
+  details {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0 16px; margin: 10px 0; box-shadow: var(--shadow);
+  }
+  details summary {
+    cursor: pointer; padding: 14px 0; font-weight: 600; font-size: 14.5px;
+    list-style: none; display: flex; justify-content: space-between; align-items: center;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; font-size: 20px; color: var(--accent); font-weight: 700; }
+  details[open] summary::after { content: "\2212"; }
+  details .body { padding: 0 0 16px; font-size: 13.5px; color: var(--text-soft); }
+
+  /* ============ Footer ============ */
+  footer { border-top: 1px solid var(--border); margin-top: 50px; padding: 24px 0; font-size: 12.5px; color: var(--text-soft); }
+  mark { background: var(--azure-cyan); color: #1B1A19; padding: 0 2px; border-radius: 3px; }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 1000px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.side { display: none; }
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .cols-3, .cols-4 { grid-template-columns: repeat(2,1fr); }
+    .spokes { grid-template-columns: 1fr; }
+    main { padding: 20px; }
+  }
+  @media (max-width: 620px){ .cols-2, .cols-3, .cols-4, .stats { grid-template-columns: 1fr; } }
+
+  /* ============ Print ============ */
+  @media print {
+    .topbar, nav.side, .btn, .search { display: none !important; }
+    .shell { grid-template-columns: 1fr; }
+    main { padding: 0; }
+    details[open] .body, details .body { display: block !important; }
+    details { break-inside: avoid; }
+    .card, .stat, .layer, .table-wrap { box-shadow: none; }
+    .hero { color: #fff !important; }
+    section { break-inside: avoid-page; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">PS</div>
+    <div>Azure Scientific Podcast Studio<small>Platform Field Guide &middot; v1.0</small></div>
+  </div>
+  <div class="spacer"></div>
+  <label class="search">
+    <span>&#128269;</span>
+    <input id="q" type="search" placeholder="Search the guide&hellip;" autocomplete="off" />
+  </label>
+  <button class="btn" id="themeBtn">&#127769; Dark</button>
+  <button class="btn" onclick="window.print()">&#128424; Print</button>
+</div>
+
+<div class="shell">
+  <!-- ============ SIDE NAV (href must map 1:1 to section ids) ============ -->
+  <nav class="side" id="nav">
+    <div class="group">
+      <div class="group-title">Start Here</div>
+      <a href="#overview">Overview</a>
+      <a href="#howto">How to Use It</a>
+      <a href="#deltas">Build &amp; Deploy Deltas</a>
+      <a href="#loop">The Production Loop</a>
+      <a href="#stats">By the Numbers</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Architecture</div>
+      <a href="#architecture">Architecture Diagram</a>
+      <a href="#landingzone">Landing-Zone Topology</a>
+      <a href="#components">Component Catalog</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Inside the Studio</div>
+      <a href="#roles">Roles &amp; Workflow</a>
+      <a href="#speech">Speech &amp; Pronunciation</a>
+      <a href="#security">Security &amp; Compliance</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Reference</div>
+      <a href="#discovery">Open Requirements</a>
+      <a href="#faq">FAQ</a>
+      <a href="#glossary">Glossary</a>
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="hero">
+      <h1>Azure Scientific Podcast Studio</h1>
+      <p class="tag">A self-service <b>research-to-podcast factory</b> for scientific &amp; healthcare teams — it turns a topic into a cited evidence set, an evidence-grounded script, medically-accurate English &amp; German narration, and a human-gated publication, all on Azure.</p>
+      <div class="chips">
+        <span class="chip">Medical &amp; scientific media</span>
+        <span class="chip">Evidence-grounded</span>
+        <span class="chip">Human-gated publication</span>
+        <span class="chip">Azure-native &middot; managed identity</span>
+        <span class="chip">WCAG 2.2 AA</span>
+      </div>
+    </div>
+
+    <!-- ===== OVERVIEW ===== -->
+    <section id="overview">
+      <h2 class="sec"><span class="num">01</span> Overview</h2>
+      <p class="lead">The studio acquires research material, builds a cited evidence set, drafts a podcast script, supports staged human review, converts approved text into high-quality speech, lets non-technical reviewers fine-tune pronunciation and delivery <b>visually</b>, stores approved media privately in Azure, and distributes it to selected recipients <b>only after explicit final approval</b>. The repo is a runnable reference implementation of the build specification in <code>spec/</code>.</p>
+      <div class="grid cols-3">
+        <div class="card"><h4>&#127775; Mission</h4><p>Turn a research topic into a traceable, cited podcast — natural EN/DE narration with trustworthy medical pronunciation, and nothing published without human approval.</p></div>
+        <div class="card"><h4>&#127959;&#65039; Approach</h4><p>A fixed priority order drives every scope decision: <b>speech quality &amp; pronunciation &rarr; factual grounding &rarr; reviewer control &rarr; security &rarr; usability &rarr; speed &rarr; cost</b>.</p></div>
+        <div class="card"><h4>&#128737;&#65039; Non-negotiables</h4><p>Managed identity + Entra ID (no secrets in source), never auto-publish, immutable published artifacts, synthetic-media disclosure, and a complete audit trail.</p></div>
+      </div>
+
+      <h3 class="sub">Delivery milestones</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Milestone</th><th>Outcome</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>M1</b></td><td>Monorepo scaffold (npm workspaces, TS refs, Vite)</td><td>Reproducible build/test/typecheck</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M2</b></td><td>Domain model + workflow state machine</td><td>Single source of truth; 8 tests</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M3</b></td><td>SSML projection engine</td><td>Friendly controls &rarr; standards SSML; 12 tests</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M4</b></td><td>Sample medical content</td><td>3 German HIV scripts + 10 pronunciation seeds</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M5&ndash;M6</b></td><td>SPA shell + full 15-step workflow screens</td><td>Accessible Azure-styled studio, walkable</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M7</b></td><td>Azure infrastructure (Bicep)</td><td>Compiles; least-privilege RBAC topology</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M8&ndash;M9</b></td><td>Documentation + validation</td><td>typecheck / test / build all green</td><td><span class="pill ga">Done</span></td></tr>
+            <tr><td><b>M10</b></td><td>API + orchestration services</td><td>Domain APIs, Durable workflows, adapters</td><td><span class="pill prev">Next</span></td></tr>
+            <tr><td><b>M11</b></td><td>Live Azure integration (Speech / Search / Cosmos / Storage)</td><td>Replace in-memory store with real services</td><td><span class="pill prev">Next</span></td></tr>
+            <tr><td><b>M12</b></td><td>CI/CD, <code>azd</code>, Defender / Policy guardrails</td><td>One-command deploy</td><td><span class="pill prev">Next</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout info"><b>North-star:</b> the MVP acceptance flow — sign-in through audit inspection — is demonstrable end-to-end in the SPA today, against an in-memory store seeded from real sample data. No cloud subscription required to walk the full experience.</div>
+    </section>
+
+    <!-- ===== HOW TO USE IT (badge glyph keeps 01..NN numbering intact) ===== -->
+    <section id="howto">
+      <h2 class="sec"><span class="num">&#9654;</span> How to Use the Studio</h2>
+      <p class="lead">A plain-language walkthrough for first-time users. You don&rsquo;t need a cloud account or any setup knowledge — follow the steps in order and you&rsquo;ll take a research topic all the way to a finished, approved podcast.</p>
+
+      <h3 class="sub">1. Open the studio (about a minute)</h3>
+      <div class="grid cols-3">
+        <div class="card"><span class="kbadge">STEP 1</span><h4>&#128230; Install once</h4><p>With <b>Node.js 20+</b> installed, open a terminal in the project folder and run <code>npm install</code>. You only do this the first time.</p></div>
+        <div class="card"><span class="kbadge">STEP 2</span><h4>&#9654;&#65039; Start it</h4><p>Run <code>npm run dev</code>. Leave that terminal window open — it keeps the studio running.</p></div>
+        <div class="card"><span class="kbadge">STEP 3</span><h4>&#127760; Open in a browser</h4><p>Go to <code>http://localhost:5173</code>. That&rsquo;s the studio. Everything stays on your machine — nothing is sent anywhere.</p></div>
+      </div>
+      <div class="callout tip"><b>Just want to look around?</b> The studio opens with a sample project already loaded (a German HIV research episode), so you can explore every screen without creating anything first.</div>
+
+      <h3 class="sub">2. Choose who you are</h3>
+      <p class="lead">Different jobs in the studio are done by different <b>roles</b>. Use the <b>role selector</b> in the top bar to switch between them — the buttons and screens change to match what that role is allowed to do. For a full walkthrough, start as <b>Creator</b>, then switch to each reviewer role when it&rsquo;s their turn.</p>
+
+      <h3 class="sub">3. Make your first podcast, step by step</h3>
+      <div class="grid cols-2">
+        <div class="card"><span class="kbadge">STEP 1 &middot; CREATOR</span><h4>&#128225; Start a project &amp; add research</h4><p>Create a new project and give it a topic. Add your research by pasting article links, DOIs/PMIDs, or uploading documents. The studio gathers the material into one place.</p></div>
+        <div class="card"><span class="kbadge">STEP 2 &middot; CREATOR</span><h4>&#128300; Accept the good evidence</h4><p>Review each source and <b>accept</b> the ones you trust (or reject the rest). You need at least one accepted source before you can move on &mdash; this keeps the podcast grounded in real evidence.</p></div>
+        <div class="card"><span class="kbadge">STEP 3 &middot; CREATOR</span><h4>&#128221; Generate the script</h4><p>Ask the studio to draft the script. It only uses your accepted evidence, adds an &ldquo;this is AI-generated&rdquo; disclosure at the top, and links each claim back to its source. Edit the wording as you like.</p></div>
+        <div class="card"><span class="kbadge">STEP 4 &middot; CREATOR</span><h4>&#127908; Shape how it sounds</h4><p>Select any word or sentence and open the <i>&ldquo;How should this sound?&rdquo;</i> panel to fix pronunciation, speed, emphasis, or pauses &mdash; in plain language. Preview just that part to hear the change instantly, then create the audio preview.</p></div>
+        <div class="card"><span class="kbadge">STEP 5 &middot; REVIEWERS</span><h4>&#9878;&#65039; Send it for review</h4><p>Switch roles (or hand off) to the <b>Scientific</b>, <b>Medical/Legal</b>, and <b>Audio</b> reviewers. Each checks their area and either approves or rejects with a reason. Rejections send it back for a quick fix &mdash; nothing is lost.</p></div>
+        <div class="card"><span class="kbadge">STEP 6 &middot; PUBLISHER</span><h4>&#128227; Publish it</h4><p>As <b>Publisher</b>, confirm the recipient list and press publish. This is the only way anything goes out, and it happens only after every check has passed.</p></div>
+      </div>
+
+      <h3 class="sub">4. Good things to know</h3>
+      <div class="grid cols-3">
+        <div class="card"><h4>&#9995; Nothing publishes on its own</h4><p>The app never sends a podcast automatically. A person with the Publisher role has to approve and publish it &mdash; on purpose.</p></div>
+        <div class="card"><h4>&#128269; Pronunciation is double-checked</h4><p>The studio listens back to the audio and flags any medical term it heard wrong. If something important is off, approval is <b>blocked</b> until a reviewer signs off.</p></div>
+        <div class="card"><h4>&#9851;&#65039; Everything is tracked</h4><p>Open the <b>Audit Trail</b> screen to see every action &mdash; who did what, when, and why. Great for checking your work or showing the process.</p></div>
+      </div>
+      <div class="callout warn"><b>If a button is greyed out,</b> it usually means a required step isn&rsquo;t finished yet (for example, you can&rsquo;t make audio until the script is approved, and you can&rsquo;t publish until the audio passes review). Finish the earlier step and the button turns on.</div>
+    </section>
+
+    <!-- ===== BUILD & DEPLOY DELTAS (badge glyph keeps 01..NN numbering intact) ===== -->
+    <section id="deltas">
+      <h2 class="sec"><span class="num">&Delta;</span> Build &amp; Deploy Deltas</h2>
+      <p class="lead">A companion patch layered on top of the reference build &mdash; the changes made while provisioning the target Azure topology into <code>rg-podstudio-dev</code>. This section is <b>additive</b>: it records where the live deployment <i>supersedes or amends</i> the defaults baked into the Bicep. Where a delta conflicts with an earlier section, <b>the delta wins</b>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Kind</th><th>What &amp; why</th></tr></thead>
+          <tbody>
+            <tr><td>&Delta;01</td><td><span class="pill red">REPLACE</span></td><td><b>Cosmos DB region:</b> West Europe &rarr; <b>France Central</b>. The demo subscription has no Cosmos region access in West Europe or North Europe (<code>isSubscriptionRegionAccessAllowedForRegular = false</code>); France Central is allowed.</td></tr>
+            <tr><td>&Delta;02</td><td><span class="pill red">REPLACE</span></td><td><b>Compute tier region:</b> Container Apps env + API + API Management &rarr; <b>France Central</b>, escaping a West Europe AKS capacity block (<code>AKSCapacityHeavyUsage</code>).</td></tr>
+            <tr><td>&Delta;03</td><td><span class="pill blue">ADD</span></td><td><b>New <code>cosmosLocation</code> and <code>computeLocation</code> parameters</b> in <code>main.bicep</code> so region overrides are deterministic and the West Europe default never re-bites.</td></tr>
+            <tr><td>&Delta;04</td><td><span class="pill green">PROMOTE</span></td><td><b>5 Foundry prompt agents</b> promoted from spec concept to a live catalog in the <code>healthcare-agent-project</code> — a demonstrable Foundry authoring path (see the Component Catalog).</td></tr>
+            <tr><td>&Delta;05</td><td><span class="pill amber">DEFER</span></td><td><b>Private endpoints / VNet isolation</b> deferred for the demo: data services run with public access <i>Enabled</i> for one-command deployability. Production flips these to <i>Disabled</i> + private endpoints.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn"><b>Region posture, stated plainly:</b> identity, monitoring, Key Vault, Storage, Speech, AI Search, Service Bus, and the Static Web App run in <b>West Europe</b>; Cosmos DB, Container Apps, and API Management run in <b>France Central</b>. This split is a capacity/region-access workaround for this subscription, not an architectural recommendation.</div>
+    </section>
+
+    <!-- ===== THE PRODUCTION LOOP ===== -->
+    <section id="loop">
+      <h2 class="sec"><span class="num">02</span> The Production Loop</h2>
+      <p class="lead">The persistent timeline every screen aligns to. Each stage is gated: research needs an accepted source, every claim maps to a source, audio is disabled until the script is approved, and nothing publishes until audio + disclosure + recipient checks pass.</p>
+      <div class="loop">
+        <div class="step"><div class="ico">&#128225;</div><b>Research</b><small>DOI/PMID/URL, allowlists, uploads</small></div>
+        <div class="arrow">&rarr;</div>
+        <div class="step"><div class="ico">&#128300;</div><b>Evidence</b><small>accept/reject, contradictions</small></div>
+        <div class="arrow">&rarr;</div>
+        <div class="step"><div class="ico">&#128221;</div><b>Script</b><small>grounded, claim-level citations</small></div>
+        <div class="arrow">&rarr;</div>
+        <div class="step"><div class="ico">&#127908;</div><b>Speech</b><small>friendly controls &rarr; SSML, QA</small></div>
+        <div class="arrow">&rarr;</div>
+        <div class="step"><div class="ico">&#9878;&#65039;</div><b>Review</b><small>scientific &middot; medical/legal &middot; audio</small></div>
+        <div class="arrow">&rarr;</div>
+        <div class="step"><div class="ico">&#128227;</div><b>Publish</b><small>human-gated, immutable, receipted</small></div>
+      </div>
+      <div class="callout tip"><b>State machine:</b> 12 durable states from <code>DRAFT</code> &rarr; &hellip; &rarr; <code>PUBLISHED</code>, with explicit rejection edges (e.g. <code>AUDIO_REVIEW &rarr; SCRIPT_DRAFT</code> for wording, <code>AUDIO_REVIEW &rarr; AUDIO_PREVIEW</code> for delivery-only fixes). Published versions are immutable; corrections create a new version.</div>
+    </section>
+
+    <!-- ===== STATS BAND ===== -->
+    <section id="stats">
+      <h2 class="sec"><span class="num">03</span> By the Numbers</h2>
+      <div class="stats">
+        <div class="stat"><div class="n">12</div><div class="l">Workflow states</div></div>
+        <div class="stat"><div class="n">20/20</div><div class="l">Unit tests green</div></div>
+        <div class="stat"><div class="n">5</div><div class="l">Foundry prompt agents</div></div>
+        <div class="stat"><div class="n">5</div><div class="l">EN/DE locales supported</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n">7</div><div class="l">Entra roles</div></div>
+        <div class="stat"><div class="n">9</div><div class="l">Private storage containers</div></div>
+        <div class="stat"><div class="n">3</div><div class="l">Script modes</div></div>
+        <div class="stat"><div class="n">15</div><div class="l">MVP workflow steps</div></div>
+      </div>
+    </section>
+
+    <!-- ===== ARCHITECTURE STACK ===== -->
+    <section id="architecture">
+      <h2 class="sec"><span class="num">04</span> Architecture Diagram</h2>
+      <p class="lead">The layered request path, top (edge) to bottom (data). Service-to-service auth is managed identity throughout; local / key auth is disabled on the data plane.</p>
+      <div class="arch">
+        <div class="layer l-edge"><span><b>Edge</b> <small>Static Web App / App Service &middot; MSAL Entra sign-in &middot; CDN</small></span><span class="lz">public edge</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="layer l-gate"><span><b>Gateway</b> <small>API Management &middot; OpenAPI façade &middot; auth &middot; routing</small></span><span class="lz">APIM</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="layer l-app"><span><b>Application</b> <small>Container Apps domain APIs &middot; Durable Functions orchestration &middot; Service Bus / Event Grid job events</small></span><span class="lz">zone-redundant</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="layer l-ai"><span><b>AI</b> <small>Foundry models + 5 prompt agents &middot; AI Search hybrid retrieval &middot; Document Intelligence &middot; Speech TTS/STT</small></span><span class="lz">Foundry</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="layer l-data"><span><b>Data</b> <small>Cosmos DB (serverless) &middot; Blob Storage (9 containers) &middot; Key Vault</small></span><span class="lz">RBAC &middot; no shared key</span></div>
+      </div>
+      <div class="gov-band"><b>Cross-cutting governance:</b> user-assigned managed identity &middot; Entra ID app roles &middot; Azure Policy &middot; Monitor + App Insights + Log Analytics + OpenTelemetry &middot; Defender for Cloud &middot; least-privilege data-plane RBAC &middot; no secrets in source.</div>
+
+      <h3 class="sub">Parallel concerns</h3>
+      <div class="spokes">
+        <div class="spoke"><h4>Speech &amp; Pronunciation</h4><ul><li>Neural TTS + batch synthesis</li><li>STT closed-loop QA</li><li>PLS / custom lexicon</li><li>SSML projection layer</li><li>Voice capability registry</li></ul></div>
+        <div class="spoke"><h4>Research &amp; Evidence</h4><ul><li>AI Search hybrid retrieval</li><li>Document Intelligence extraction</li><li>Connector adapters (DOI/PMID/web)</li><li>Citation anchors</li><li>Prompt-injection defense</li></ul></div>
+        <div class="spoke"><h4>Security &amp; Audit</h4><ul><li>Entra roles + managed identity</li><li>Immutable published artifacts</li><li>Complete audit trail</li><li>Synthetic-media disclosure</li><li>Upload scanning + quarantine</li></ul></div>
+      </div>
+    </section>
+
+    <!-- ===== LANDING-ZONE TOPOLOGY ===== -->
+    <section id="landingzone">
+      <h2 class="sec"><span class="num">05</span> Landing-Zone Topology</h2>
+      <p class="lead">The deployed resource layout in <code>rg-podstudio-dev</code>, plus the production networking target. Zone badges reflect the intended posture; the demo runs public-access <i>Enabled</i> for one-command deployability.</p>
+      <div class="lz-legend">
+        <span class="lg"><span class="dot" style="background:var(--ms-green)"></span> Zonal / AZ (z-def)</span>
+        <span class="lg"><span class="dot" style="background:var(--azure-blue)"></span> Zone-redundant target (z-zt)</span>
+        <span class="lg"><span class="dot" style="background:var(--foundry-magenta)"></span> Public edge / demo (z-pub)</span>
+        <span class="lg"><span class="dot" style="background:var(--ms-amber)"></span> Optional / production (z-opt)</span>
+      </div>
+
+      <div class="hub-box">
+        <span class="box-label">Shared platform services &mdash; West Europe</span>
+        <div class="grid cols-3">
+          <div class="subnet"><h5>Identity &amp; secrets <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Managed Identity <span class="z z-zt">ZT</span></span><span class="svc">Key Vault <span class="z z-def">AZ</span></span></div></div>
+          <div class="subnet"><h5>Observability <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Log Analytics <span class="z z-zt">ZT</span></span><span class="svc">App Insights <span class="z z-zt">ZT</span></span></div></div>
+          <div class="subnet"><h5>Network (prod target) <span class="nsg">NSG</span></h5><div class="chiplist"><span class="svc">Private DNS <span class="z z-opt">opt</span></span><span class="svc">Private Endpoints <span class="z z-opt">opt</span></span></div></div>
+        </div>
+      </div>
+
+      <div class="vnet-box">
+        <span class="box-label">Workload spoke &mdash; West Europe</span>
+        <div class="grid cols-3">
+          <div class="subnet"><h5>Web / edge <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Static Web App <span class="z z-pub">pub</span></span></div></div>
+          <div class="subnet"><h5>AI plane <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Azure AI Speech <span class="z z-pub">pub</span></span><span class="svc">Azure AI Search <span class="z z-pub">pub</span></span></div></div>
+          <div class="subnet"><h5>Messaging &amp; media <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Service Bus <span class="z z-zt">ZT</span></span><span class="svc">Blob Storage <span class="z z-zt">ZT</span></span></div></div>
+        </div>
+      </div>
+
+      <div class="vnet-box">
+        <span class="box-label">Workload spoke &mdash; France Central</span>
+        <div class="grid cols-3">
+          <div class="subnet"><h5>App subnet <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Container Apps env + API <span class="z z-zt">ZT</span></span></div></div>
+          <div class="subnet"><h5>Gateway <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">API Management <span class="z z-pub">pub</span></span></div></div>
+          <div class="subnet"><h5>Data subnet <span class="nsg">RBAC</span></h5><div class="chiplist"><span class="svc">Cosmos DB (serverless) <span class="z z-def">AZ</span></span></div></div>
+        </div>
+      </div>
+      <div class="callout tip"><b>Zone posture:</b> Storage and Service Bus target zone-redundant SKUs (ZRS / Premium) in production; Cosmos serverless is single-region for the demo (<code>isZoneRedundant: false</code>). Production should flip AI Speech, AI Search, Static Web App, and APIM to private endpoints and disable public access, per spec &sect;11.</div>
+    </section>
+
+    <!-- ===== COMPONENT CATALOG ===== -->
+    <section id="components">
+      <h2 class="sec"><span class="num">06</span> Component Catalog</h2>
+      <p class="lead">What ships in the repo today, and the Azure services the Bicep provisions. Pills mark maturity: <span class="pill ga">Real</span> = production-quality logic in-repo, <span class="pill prev">Simulated</span> = correct in the UI via in-memory data, <span class="pill azure">Azure</span> = provisioned by IaC, <span class="pill new">New</span> = added this engagement.</p>
+      <div class="grid cols-2">
+        <div class="card"><h4><code>@studio/domain</code> <span class="pill ga">Real</span></h4><p>Typed entity model (Section 6 of the spec) + the workflow state machine — legal transitions, rejection edges, terminal states. 8 unit tests.</p></div>
+        <div class="card"><h4><code>@studio/ssml</code> <span class="pill ga">Real</span></h4><p>Converts non-expert speech controls into standards-compliant SSML, adapts to each voice's declared capabilities, and warns instead of failing. XML-injection-safe. 12 unit tests.</p></div>
+        <div class="card"><h4><code>apps/web</code> React SPA <span class="pill ga">Real</span></h4><p>The reviewer-facing studio: 15-step MVP flow, in-memory store seeded from sample data, live SSML preview, WCAG 2.2 AA.</p></div>
+        <div class="card"><h4>Static Web App <span class="pill azure">Azure</span></h4><p>Hosts the SPA with Entra sign-in (MSAL). Production edge for the reviewer experience.</p></div>
+        <div class="card"><h4>API Management <span class="pill azure">Azure</span></h4><p>OpenAPI façade for the domain APIs — auth, routing, throttling. Provisioned in France Central.</p></div>
+        <div class="card"><h4>Container Apps <span class="pill azure">Azure</span></h4><p>Hosts the domain APIs + Durable orchestration (server-side enforcement, M10). Provisioned in France Central.</p></div>
+        <div class="card"><h4>Azure AI Speech <span class="pill azure">Azure</span></h4><p>Neural TTS + batch synthesis for long-form, plus STT for closed-loop pronunciation QA. Key auth disabled; RBAC only.</p></div>
+        <div class="card"><h4>Azure AI Search <span class="pill azure">Azure</span></h4><p>Hybrid retrieval over indexed research passages, filters, and citation anchors.</p></div>
+        <div class="card"><h4>Cosmos DB (serverless) <span class="pill azure">Azure</span></h4><p>Projects, workflow state, reviews, recipients, audit metadata. Local-auth disabled, data-plane RBAC, Continuous-7-day backup. In France Central.</p></div>
+        <div class="card"><h4>Blob Storage <span class="pill azure">Azure</span></h4><p>9 private containers (quarantine &rarr; approved &rarr; scripts &rarr; synthesis &rarr; audio &rarr; publication &rarr; audit), versioning, lifecycle rules, no public / shared-key access.</p></div>
+        <div class="card"><h4>Key Vault + Service Bus <span class="pill azure">Azure</span></h4><p>Key Vault (RBAC, purge protection) for the rare secret that can't use MI; Service Bus queues for synthesis / QA / delivery job events.</p></div>
+        <div class="card"><h4>Foundry prompt agents (&times;5) <span class="pill new">New</span></h4><p>The studio's AI stages published as reusable Foundry prompt agents in the <code>healthcare-agent-project</code> catalog (model <code>gpt-4.1</code>). See the table below.</p></div>
+      </div>
+
+      <h3 class="sub">Foundry prompt agents</h3>
+      <p class="lead">Each production stage that calls a model is expressed as a governed, versioned Foundry prompt agent — a demonstrable authoring/catalog path in the nextgen portal. Temperatures reflect the priority order: extraction/evaluation run cold, scriptwriting runs warmer.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Agent</th><th>Stage</th><th>Purpose</th><th>Temp</th></tr></thead>
+          <tbody>
+            <tr><td><code>research-summarizer</code></td><td><span class="pill blue">research</span></td><td>Neutral, evidence-grounded summaries of acquired sources — no fabrication, association vs. causation preserved.</td><td>0.2</td></tr>
+            <tr><td><code>evidence-extractor</code></td><td><span class="pill blue">evidence</span></td><td>Extracts the structured evidence model (population, endpoints, results, limitations) with citation anchors.</td><td>0.1</td></tr>
+            <tr><td><code>podcast-script-generator</code></td><td><span class="pill purple">script</span></td><td>Drafts the podcast script from accepted evidence only, with an up-front AI/synthetic-media disclosure and claim-level citation mapping.</td><td>0.6</td></tr>
+            <tr><td><code>script-fact-evaluator</code></td><td><span class="pill amber">review</span></td><td>Checks numbers, units, and claims against the evidence set; flags unsupported statements and critical omissions.</td><td>0.1</td></tr>
+            <tr><td><code>pronunciation-ssml-assistant</code></td><td><span class="pill green">speech</span></td><td>Proposes pronunciation candidates and SSML directives for medical terms — candidates only, never authoritative.</td><td>0.2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout info"><b>Reprovision / verify:</b> the agents are idempotently created by <code>infra/foundry/provision-agents.ps1</code> against the Foundry agents REST API using the signed-in Azure CLI identity. See <code>infra/foundry/README.md</code> for portal links and removal steps.</div>
+    </section>
+
+    <!-- ===== ROLES & WORKFLOW ===== -->
+    <section id="roles">
+      <h2 class="sec"><span class="num">07</span> Roles &amp; Workflow</h2>
+      <p class="lead">Role-based access via Microsoft Entra ID groups and application roles. One user may hold multiple roles; least privilege is enforced server-side (not only in the SPA). Every approval records user, role, timestamp, content hash, comments, and the approved version.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th>Can do</th></tr></thead>
+          <tbody>
+            <tr><td><b>Creator</b></td><td>Starts projects, selects sources, generates scripts, requests review, creates audio previews.</td></tr>
+            <tr><td><b>Scientific Reviewer</b></td><td>Validates factual accuracy, citations, terminology, and scientific balance.</td></tr>
+            <tr><td><b>Medical/Legal Reviewer</b></td><td>Reviews disclosures, approved language, safety language, and publication readiness.</td></tr>
+            <tr><td><b>Audio Reviewer</b></td><td>Reviews pronunciation, voices, pacing, prosody, loudness, and mastering.</td></tr>
+            <tr><td><b>Publisher</b></td><td>Approves recipient lists and explicitly publishes an approved version. <span class="pill must">gates external recipients</span></td></tr>
+            <tr><td><b>Administrator</b></td><td>Manages source allowlists, vocabularies, voice/model availability, retention, templates, channels.</td></tr>
+            <tr><td><b>Auditor / Read-only</b></td><td>Inspects evidence, versions, decisions, and publication history — cannot alter content.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 class="sub">Gating rules</h3>
+      <div class="grid cols-2">
+        <div class="card"><h4>&#128273; Evidence gate</h4><p>Research can't finalize without at least one accepted source. Every material scientific claim must map to one or more accepted sources.</p></div>
+        <div class="card"><h4>&#128273; Script gate</h4><p>Script generation never implies approval. Audio generation stays disabled until a script version is approved.</p></div>
+        <div class="card"><h4>&#128273; Publication gate</h4><p>Publication is disabled until audio approval, disclosure checks, recipient validation, and distribution review all pass.</p></div>
+        <div class="card"><h4>&#128273; Rejection is first-class</h4><p>A rejection always requires a reason and creates a new task for the appropriate stage — nothing is silently reverted.</p></div>
+      </div>
+    </section>
+
+    <!-- ===== SPEECH & PRONUNCIATION ===== -->
+    <section id="speech">
+      <h2 class="sec"><span class="num">08</span> Speech &amp; Pronunciation</h2>
+      <p class="lead">The highest-priority feature. Non-technical reviewers select a word, phrase, sentence, or speaker turn and open a plain-language <i>&ldquo;How should this sound?&rdquo;</i> panel — the UI generates standards-compliant SSML behind the scenes and previews only the selected region for fast iteration.</p>
+      <div class="grid cols-2">
+        <div class="card"><h4>&#127911; Friendly controls</h4><p>Pronunciation (&ldquo;sounds like,&rdquo; phonetic, IPA expert mode), speed, emphasis, pause before/after, pitch, volume, tone/style, language treatment (DE/EN/auto), and &ldquo;speak as&rdquo; (acronym, cardinal, ordinal, date, dosage, unit, trial ID, DOI, URL).</p></div>
+        <div class="card"><h4>&#128218; Pronunciation library</h4><p>A versioned organization glossary — canonical form, locale, spoken alias, IPA/phonemes, optional audio reference, therapeutic tag, approval state, and review history. Uses PLS/custom lexicon where the voice supports it, else word-level SSML.</p></div>
+        <div class="card"><h4>&#128269; Closed-loop QA</h4><p>Every preview is re-transcribed with STT and compared against expected medical terms, numbers, drug names, trial IDs, and units. Critical-term mismatches <b>block</b> until reviewed; a reviewer may override with a required reason.</p></div>
+        <div class="card"><h4>&#127925; Voice / model comparison</h4><p>Curated voice cards by locale and use case, A/B/C rendering of a short segment, blind comparison, and saved voice pairs per template / therapeutic area. Provider-adapter design keeps the catalog configuration-driven.</p></div>
+      </div>
+      <h3 class="sub">Provider-neutral annotation &rarr; SSML</h3>
+      <p class="lead">User intent is stored as a provider-neutral annotation model, not raw SSML in editor content. At synthesis time it is validated against the voice capability profile, lexicon-resolved, and normalized with documented fallbacks — then frozen as an immutable synthesis artifact.</p>
+      <pre><code>{
+  "range": { "segmentId": "seg-42", "start": 12, "end": 27 },
+  "pronunciation": { "locale": "de-DE", "ipa": "..." },
+  "rate": "slow",
+  "emphasis": "moderate",
+  "pauseAfterMs": 350,
+  "languageMode": "en-US"
+}</code></pre>
+      <div class="callout warn"><b>Demo blocker to watch:</b> in the seeded HIV episode, the term <b>Tenofovir-Alafenamid</b> trips a blocking pronunciation-QA mismatch — approval is gated until a reviewer records an override, exactly as the spec requires.</div>
+    </section>
+
+    <!-- ===== SECURITY & COMPLIANCE ===== -->
+    <section id="security">
+      <h2 class="sec"><span class="num">09</span> Security &amp; Compliance</h2>
+      <p class="lead">The design follows the spec's non-negotiables. The IaC grants least-privilege data-plane RBAC to a single user-assigned identity, and disables local/key auth on Storage, Cosmos, Speech, Search, and Service Bus.</p>
+      <div class="grid cols-2">
+        <div class="card"><h4>&#128272; Managed identity, no secrets</h4><p>No credentials in source, client bundles, or config. Least-privilege RBAC data-plane roles; local/key auth disabled on data services; rare secrets go to Key Vault.</p></div>
+        <div class="card"><h4>&#9995; Human-gated publication</h4><p>Nothing publishes automatically; Publish requires an explicit confirmation summary and is idempotent + receipted. External recipients require the Publisher role; addresses are never exposed cross-recipient.</p></div>
+        <div class="card"><h4>&#128196; Immutable + disclosed</h4><p>Published artifacts are immutable — corrections create a new version. Synthetic-media disclosure is embedded in every publication; pronunciation entries are review candidates, never authoritative.</p></div>
+        <div class="card"><h4>&#9855;&#65039; Untrusted content defense</h4><p>Acquired web/document content is treated as untrusted: SSRF-safe URL validation, upload MIME/size/structure checks, quarantine-before-validate, and indirect prompt-injection defenses.</p></div>
+        <div class="card"><h4>&#9851;&#65039; Complete audit trail</h4><p>Access, state transitions, content changes, review decisions, model/voice choices, and publication events are all logged — with tokens, secrets, and unnecessary PII redacted from telemetry.</p></div>
+        <div class="card"><h4>&#9855; Accessibility (WCAG 2.2 AA)</h4><p>Keyboard-first, visible focus, skip link, status by icon + text (never color alone), accessible sliders + waveform alternatives, captions/transcripts, reduced-motion support.</p></div>
+      </div>
+      <div class="callout warn"><b>Compliance honesty:</b> using Azure does <b>not</b> make the app HIPAA, GxP, MLR, or otherwise compliant. The studio provides the technical controls and evidence the deploying organization needs for its own validation and governance — the claim is never made on Azure's behalf.</div>
+    </section>
+
+    <!-- ===== OPEN REQUIREMENTS & DISCOVERY ===== -->
+    <section id="discovery">
+      <h2 class="sec"><span class="num">10</span> Open Requirements &amp; Discovery</h2>
+      <p class="lead">Assumptions to validate, open questions for the customer, and the prioritized path from this reference implementation to a production deployment.</p>
+      <div class="callout warn"><b>Read this first.</b> Items marked <span class="pill red">P0</span> must be answered or built before design lock.</div>
+
+      <h3 class="sub">Assumptions (validate)</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Assumption</th><th>Basis</th><th>Risk if wrong</th></tr></thead>
+        <tbody>
+          <tr><td>Target region(s) can host Speech + Foundry at scale</td><td>German sample content + voice availability favored West Europe</td><td>Capacity / region-access limits (already hit — Cosmos + compute moved to France Central)</td></tr>
+          <tr><td>In-browser mock backend is acceptable for the demo</td><td>Reviewable UX without a subscription</td><td>No server-side enforcement yet; workflow rules live client-side</td></tr>
+          <tr><td><code>gpt-4.1</code> is the right model for the 5 agents</td><td>Available Foundry deployment in-tenant</td><td>Model / region drift; eval thresholds may shift</td></tr>
+          <tr><td>Public-access data plane is fine for demo only</td><td>One-command deployability</td><td>Production must move to private endpoints (spec &sect;11)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub">Open questions for the customer</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Domain</th><th>Question</th><th>Unblocks</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill blue">Capacity</span></td><td>Which region(s) and quota for Speech neural voices + Foundry models at scale?</td><td>Region / DR design + go-live</td></tr>
+          <tr><td><span class="pill amber">HITL</span></td><td>Which approval gates are mandatory / sequential / parallel in your MLR process?</td><td>Workflow gate configuration</td></tr>
+          <tr><td><span class="pill magenta">Compliance</span></td><td>Data residency + retention per artifact class?</td><td>Storage lifecycle + private networking</td></tr>
+          <tr><td><span class="pill green">Voices</span></td><td>Which neural voices/locales are approved for de-DE/-AT/-CH + en-US/-GB?</td><td>Voice capability registry</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub">Prioritized requirements</h3>
+      <p class="lead"><span class="pill green">Discovery</span> &middot; <span class="pill blue">FR</span> &middot; <span class="pill purple">NFR</span> &middot; <span class="pill magenta">Compliance</span></p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Priority</th><th>Requirement</th><th>Type</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="pill red">P0</span></td><td>Confirm region + quota for Speech + Foundry</td><td><span class="pill green">Discovery</span></td><td>Blocks any live deployment (already forced region moves)</td></tr>
+          <tr><td>2</td><td><span class="pill red">P0</span></td><td>Move data services to private endpoints + disable public access</td><td><span class="pill purple">NFR</span></td><td>Spec &sect;11 network isolation</td></tr>
+          <tr><td>3</td><td><span class="pill red">P0</span></td><td>Server-side authorization + workflow enforcement</td><td><span class="pill magenta">Compliance</span></td><td>Least privilege; client store is convenience only</td></tr>
+          <tr><td>4</td><td><span class="pill amber">P1</span></td><td>Domain APIs + Durable orchestration (M10)</td><td><span class="pill blue">FR</span></td><td>Real backend behind APIM</td></tr>
+          <tr><td>5</td><td><span class="pill amber">P1</span></td><td>Wire live adapters: Speech, Search, Foundry, Cosmos/Blob (M11)</td><td><span class="pill blue">FR</span></td><td>Replace in-memory mocks</td></tr>
+          <tr><td>6</td><td><span class="pill amber">P1</span></td><td>CI/CD with <code>azd</code> + WIF, Defender, Policy (M12)</td><td><span class="pill purple">NFR</span></td><td>One-command deploy + guardrails</td></tr>
+          <tr><td>7</td><td><span class="pill blue">P2</span></td><td>Custom lexicon / PLS upload endpoint</td><td><span class="pill blue">FR</span></td><td>Authoritative pronunciation control</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout tip"><b>Critical path (start week 1):</b> region / quota confirmation, private networking, and server-side authorization — the longest-lead-time items that gate everything downstream.</div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq">
+      <h2 class="sec"><span class="num">11</span> FAQ</h2>
+      <details data-default-open><summary>What is real vs. simulated in this reference?</summary><div class="body">The domain model + workflow state machine and the SSML projection engine are <b>real and unit-tested</b>; the React SPA is runnable end-to-end. The backend APIs, AI/research, and speech synthesis are <b>simulated in-browser</b> using data seeded from real sample content, and the Bicep <b>compiles</b> and provisions the target topology. See <code>KNOWN_LIMITATIONS.md</code> for the honest, per-capability inventory.</div></details>
+      <details><summary>Why doesn&rsquo;t it publish automatically?</summary><div class="body">Human-gated publication is a spec non-negotiable. Publish requires an explicit confirmation summary, is idempotent, and generates a per-recipient receipt. External recipients require the Publisher role, and one recipient&rsquo;s address is never exposed to another.</div></details>
+      <details><summary>How does pronunciation stay medically accurate?</summary><div class="body">A closed loop: each preview is re-transcribed with speech-to-text and compared against expected medical terms, numbers, drug names, trial IDs, and units. Critical-term mismatches <b>block</b> approval until reviewed; a reviewer may override with a required reason. A curated &ldquo;golden pronunciation set&rdquo; regression-tests voice/model/lexicon changes.</div></details>
+      <details><summary>Why are Cosmos and the compute tier in a different region?</summary><div class="body">The demo subscription has no Cosmos region access in West Europe or North Europe, and West Europe was hitting AKS capacity limits for Container Apps. New <code>cosmosLocation</code> and <code>computeLocation</code> Bicep parameters route Cosmos, Container Apps, and APIM to <b>France Central</b>; the rest of the resources remain in West Europe.</div></details>
+      <details><summary>Is it HIPAA / GxP / MLR compliant?</summary><div class="body">No — using Azure does not make it compliant. The studio provides the technical controls and evidence (managed identity, RBAC, audit trail, disclosure, retention hooks) that the deploying organization needs for its own validation and governance process.</div></details>
+      <details><summary>Can I run it right now?</summary><div class="body">Yes. With Node.js &ge; 20: <code>npm install</code> then <code>npm run dev</code>, and open <code>http://localhost:5173</code>. No cloud resources are needed and no network calls leave the browser — safe to demo offline.</div></details>
+    </section>
+
+    <!-- ===== GLOSSARY ===== -->
+    <section id="glossary">
+      <h2 class="sec"><span class="num">12</span> Glossary</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><b>SSML</b></td><td>Speech Synthesis Markup Language — standards-compliant markup that controls pronunciation, prosody, and pauses in text-to-speech.</td></tr>
+            <tr><td><b>PLS / custom lexicon</b></td><td>Pronunciation Lexicon Specification — a reusable dictionary that maps written terms to their spoken form/phonemes for a voice.</td></tr>
+            <tr><td><b>IPA</b></td><td>International Phonetic Alphabet — precise phonetic notation used for expert pronunciation entries.</td></tr>
+            <tr><td><b>TTS / STT</b></td><td>Text-to-speech / speech-to-text. STT re-transcription powers the closed-loop pronunciation QA.</td></tr>
+            <tr><td><b>Foundry prompt agent</b></td><td>A governed, versioned Microsoft Foundry catalog entry that packages a model + instructions for a specific task/stage.</td></tr>
+            <tr><td><b>Managed identity</b></td><td>An Entra identity Azure manages for a resource, so service-to-service auth needs no secrets in code.</td></tr>
+            <tr><td><b>RBAC</b></td><td>Role-Based Access Control — least-privilege data-plane roles granted to the workload identity.</td></tr>
+            <tr><td><b>DOI / PMID</b></td><td>Digital Object Identifier / PubMed ID — stable identifiers used to resolve research sources.</td></tr>
+            <tr><td><b>INN / USAN</b></td><td>International Nonproprietary Name / United States Adopted Name — standardized generic drug names (pronunciation candidates).</td></tr>
+            <tr><td><b>MLR</b></td><td>Medical, Legal &amp; Regulatory review — the approval gate for regulated life-sciences content.</td></tr>
+            <tr><td><b>Synthetic-media disclosure</b></td><td>Embedded metadata + configurable spoken statement declaring the audio is AI-generated.</td></tr>
+            <tr><td><b>ZRS / AZ</b></td><td>Zone-Redundant Storage / Availability Zone — resiliency posture for data services and compute.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <p><b>Azure Scientific Podcast Studio &mdash; Platform Field Guide</b> &mdash; generated from the repository (<code>spec/</code>, <code>README.md</code>, <code>PLAN.md</code>, <code>KNOWN_LIMITATIONS.md</code>, <code>infra/</code>).</p>
+      <p>Themed with the Microsoft Azure + Foundry brand palette. <b>Confirm current status</b> of service availability and SKUs against <a href="https://learn.microsoft.com/azure/" target="_blank" rel="noopener">Microsoft Learn</a> and <a href="https://azure.microsoft.com/updates/" target="_blank" rel="noopener">Azure Updates</a> &mdash; product names and availability change.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // ===== Theme toggle =====
+  const themeBtn = document.getElementById("themeBtn");
+  function syncThemeBtn() {
+    const dark = document.documentElement.getAttribute("data-theme") === "dark";
+    themeBtn.innerHTML = dark ? "\u2600\uFE0F Light" : "\uD83C\uDF19 Dark";
+  }
+  syncThemeBtn();
+  themeBtn.addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+    syncThemeBtn();
+  });
+
+  // ===== Scroll-spy =====
+  const navLinks = Array.from(document.querySelectorAll("nav.side a"));
+  const linkById = new Map(navLinks.map(a => [a.getAttribute("href").slice(1), a]));
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove("active"));
+        const link = linkById.get(e.target.id);
+        if (link) link.classList.add("active");
+      }
+    });
+  }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+  document.querySelectorAll("main section[id]").forEach(s => spy.observe(s));
+
+  // ===== Live search =====
+  const q = document.getElementById("q");
+  const sections = Array.from(document.querySelectorAll("main section[id]"));
+
+  function clearMarks(root) {
+    root.querySelectorAll("mark").forEach(m => {
+      const t = document.createTextNode(m.textContent);
+      m.parentNode.replaceChild(t, m);
+      t.parentNode.normalize();
+    });
+  }
+  function markText(node, term) {
+    if (node.nodeType === 3) {
+      const idx = node.nodeValue.toLowerCase().indexOf(term);
+      if (idx >= 0) {
+        const span = document.createElement("mark");
+        const after = node.splitText(idx);
+        after.splitText(term.length);
+        span.textContent = after.nodeValue;
+        after.parentNode.replaceChild(span, after);
+        return true;
+      }
+    } else if (node.nodeType === 1 && !["SCRIPT","STYLE","MARK"].includes(node.tagName)) {
+      Array.from(node.childNodes).forEach(c => markText(c, term));
+    }
+    return false;
+  }
+
+  q.addEventListener("input", () => {
+    const term = q.value.trim().toLowerCase();
+    sections.forEach(clearMarks);
+    if (!term) {
+      sections.forEach(s => s.style.display = "");
+      document.querySelectorAll("details").forEach(d => d.open = d.hasAttribute("data-default-open"));
+      return;
+    }
+    sections.forEach(s => {
+      const hit = s.textContent.toLowerCase().includes(term);
+      s.style.display = hit ? "" : "none";
+      if (hit) {
+        markText(s, term);
+        s.querySelectorAll("details").forEach(d => {
+          if (d.textContent.toLowerCase().includes(term)) d.open = true;
+        });
+      }
+    });
+  });
+
+  // remember default-open FAQ items
+  document.querySelectorAll("details[open]").forEach(d => d.setAttribute("data-default-open",""));
+</script>
+</body>
+</html>

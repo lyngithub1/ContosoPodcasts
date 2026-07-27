@@ -1,0 +1,23 @@
+# Normalize line endings so the repo is identical on Windows, macOS, and Linux.
+* text=auto eol=lf
+
+# Windows-only tooling keeps CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets: never diff or normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp3 binary
+*.wav binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Generated — collapse in PR diffs.
+package-lock.json linguist-generated=true diff=lockfile

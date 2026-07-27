@@ -1,0 +1,24 @@
+# Personal, machine-local overrides for the Podcast Studio scripts.
+#
+#   Copy-Item infra/_env.local.ps1.example infra/_env.local.ps1
+#
+# infra/_env.local.ps1 is git-ignored — it never gets committed. Still, put NO
+# secrets here: these are resource coordinates only. All service auth uses your
+# `az login` context or the platform managed identity.
+
+$env:PODSTUDIO_SUBSCRIPTION_ID = '00000000-0000-0000-0000-000000000000'
+$env:PODSTUDIO_RESOURCE_GROUP  = 'rg-podstudio-dev'
+$env:PODSTUDIO_LOCATION        = 'francecentral'
+
+# The random suffix Bicep appended to your resource names, e.g. 'a1b2c3d4e5f6'.
+# Most resource names are derived from this (st<suffix>, cosmos-<suffix>, …).
+$env:PODSTUDIO_RESOURCE_SUFFIX = ''
+
+# Deployed endpoints.
+$env:PODSTUDIO_API_BASE_URL    = 'https://<container-app>.<region>.azurecontainerapps.io'
+$env:PODSTUDIO_SPEECH_ENDPOINT = 'https://<speech-account>.cognitiveservices.azure.com'
+
+# Microsoft Foundry (agents). Leave blank to skip the Foundry scripts.
+$env:PODSTUDIO_FOUNDRY_RESOURCE_GROUP   = ''
+$env:PODSTUDIO_FOUNDRY_ACCOUNT          = ''
+$env:PODSTUDIO_FOUNDRY_PROJECT_ENDPOINT = 'https://<account>.services.ai.azure.com/api/projects/<project>'
