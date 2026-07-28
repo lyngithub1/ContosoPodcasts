@@ -7,7 +7,7 @@ Set-Content -Path $log -Value ("speech revert " + (Get-Date -Format o))
 function Log($m) { Add-Content -Path $log -Value $m }
 $ids = Get-Content "$PSScriptRoot\_ids.json" -Raw | ConvertFrom-Json
 
-# 1) Re-enable public network access (AAD/RBAC only — no keys) so TTS/STT work again.
+# 1) Re-enable public network access (AAD/RBAC only - no keys) so TTS/STT work again.
 az resource update --ids $ids.speech --set properties.publicNetworkAccess=Enabled properties.networkAcls.defaultAction=Allow -o none 2>&1 | Add-Content -Path $log
 Log ("speech publicAccess ENABLED exit={0}" -f $LASTEXITCODE)
 

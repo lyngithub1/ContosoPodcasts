@@ -3,12 +3,80 @@ import {
   authorizeTransition,
   canTransition,
   evaluateTransition,
+  isStageComplete,
   isTerminal,
   nextStates,
   rolesForTransition,
+  STAGE_ORDER,
   STATE_TO_STAGE,
   type WorkflowState,
 } from './workflow.js';
+
+describe('isStageComplete (timeline checkmarks)', () => {
+  it('marks stages the project has moved past as complete', () => {
+    expect(isStageComplete('Research', 'SCRIPT_DRAFT')).toBe(true);
+    expect(isStageComplete('Evidence', 'SCRIPT_DRAFT')).toBe(true);
+  });
+
+  it('does not mark stages the project has not reached', () => {
+    expect(isStageComplete('Review', 'SCRIPT_DRAFT')).toBe(false);
+    expect(isStageComplete('Publish', 'AUDIO_REVIEW')).toBe(false);
+  });
+
+  it('leaves the current stage incomplete while its decision is pending', () => {
+    expect(isStageComplete('Review', 'AUDIO_REVIEW')).toBe(false);
+    expect(isStageComplete('Script', 'SCRIPT_REVIEW')).toBe(false);
+  });
+
+  it('marks the current stage complete once its decision is recorded', () => {
+    // AUDIO_APPROVED still maps to the Review stage, but the reviewer is done.
+    expect(STATE_TO_STAGE.AUDIO_APPROVED).toBe('Review');
+    expect(isStageComplete('Review', 'AUDIO_APPROVED')).toBe(true);
+
+    expect(STATE_TO_STAGE.SCRIPT_APPROVED).toBe('Script');
+    expect(isStageComplete('Script', 'SCRIPT_APPROVED')).toBe(true);
+  });
+
+  it('keeps Review complete once the project reaches Publish', () => {
+    expect(isStageComplete('Review', 'READY_TO_PUBLISH')).toBe(true);
+    expect(isStageComplete('Review', 'PUBLISHED')).toBe(true);
+  });
+
+  it('marks every stage complete when published', () => {
+    for (const stage of STAGE_ORDER) {
+      expect(isStageComplete(stage, 'PUBLISHED')).toBe(true);
+    }
+  });
+
+  it('never regresses along the happy path', () => {
+    // Once a stage is complete for some state, it stays complete for every
+    // later state on the forward path.
+    const forward: WorkflowState[] = [
+      'DRAFT',
+      'RESEARCH_CONFIGURED',
+      'RESEARCH_RUNNING',
+      'RESEARCH_REVIEW',
+      'SCRIPT_DRAFT',
+      'SCRIPT_REVIEW',
+      'SCRIPT_APPROVED',
+      'AUDIO_PREVIEW',
+      'AUDIO_REVIEW',
+      'AUDIO_APPROVED',
+      'READY_TO_PUBLISH',
+      'PUBLISHED',
+    ];
+    for (const stage of STAGE_ORDER) {
+      let sawComplete = false;
+      for (const state of forward) {
+        const complete = isStageComplete(stage, state);
+        if (complete) sawComplete = true;
+        else if (sawComplete) {
+          throw new Error(`Stage "${stage}" regressed to incomplete at state "${state}"`);
+        }
+      }
+    }
+  });
+});
 
 describe('workflow state machine', () => {
   it('allows the happy-path forward transitions', () => {

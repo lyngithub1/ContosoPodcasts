@@ -165,6 +165,36 @@ export function isTerminal(state: WorkflowState): boolean {
   return TRANSITIONS[state].length === 0;
 }
 
+/**
+ * States whose mapped stage is **finished** rather than in progress.
+ *
+ * A few states keep the reviewer on the same screen after their decision is
+ * made: `AUDIO_APPROVED` still maps to the Review stage (that is where the audio
+ * screens live) even though the reviewer's work is complete. Without this the
+ * timeline would render an approved stage as "current", which reads as an
+ * unfinished step.
+ */
+const STAGE_COMPLETING_STATES: ReadonlySet<WorkflowState> = new Set<WorkflowState>([
+  'SCRIPT_APPROVED',
+  'AUDIO_APPROVED',
+]);
+
+/**
+ * Whether `stage` should render as completed for a project in `state`.
+ *
+ * True for any stage the project has moved past, for every stage once the
+ * project is `PUBLISHED`, and for the current stage when its own decision has
+ * already been recorded (see {@link STAGE_COMPLETING_STATES}).
+ */
+export function isStageComplete(stage: ProductionStage, state: WorkflowState): boolean {
+  const currentIdx = STAGE_ORDER.indexOf(STATE_TO_STAGE[state]);
+  const idx = STAGE_ORDER.indexOf(stage);
+  if (idx < 0 || currentIdx < 0) return false;
+  if (state === 'PUBLISHED') return true;
+  if (idx < currentIdx) return true;
+  return idx === currentIdx && STAGE_COMPLETING_STATES.has(state);
+}
+
 // ---------------------------------------------------------------------------
 // Role authorization (Section 2 — least-privilege, enforced server-side)
 // ---------------------------------------------------------------------------

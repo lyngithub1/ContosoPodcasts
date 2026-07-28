@@ -5,7 +5,7 @@ import { Badge } from '../../components/common/Badge';
 import { branding } from '../../config/branding';
 
 export function PublishView({ project }: { project: Project }) {
-  const { audioVersions, sources, scripts, recipients, distributionLists, publications, deliveryReceipts, activeRole, publish } = useStudio();
+  const { audioVersions, sources, scripts, recipients, distributionLists, publications, deliveryReceipts, activeRole, publish, transitionProject } = useStudio();
   const audio = audioVersions.find((a) => a.projectId === project.id);
   const script = scripts.find((s) => s.projectId === project.id);
   const acceptedSources = sources.filter((s) => s.projectId === project.id && s.status === 'accepted');
@@ -30,6 +30,10 @@ export function PublishView({ project }: { project: Project }) {
   const projectPubs = publications.filter((p) => p.projectId === project.id);
 
   const ready = project.state === 'READY_TO_PUBLISH' || project.state === 'PUBLISHED';
+  // Approved audio still needs a Publisher to release it for distribution. This
+  // is the AUDIO_APPROVED -> READY_TO_PUBLISH edge, deliberately separate from
+  // the AudioReviewer's approval decision.
+  const awaitingRelease = project.state === 'AUDIO_APPROVED';
   const externalBlocked = hasExternal && !isPublisher;
   const canPublish = ready && audio && script && chosen.length > 0 && !externalBlocked && project.state !== 'PUBLISHED';
 
@@ -51,7 +55,10 @@ export function PublishView({ project }: { project: Project }) {
       recipientIds: chosenRecipientIds,
       disclosureStatement: branding.spokenDisclosure,
       acceptedSourceIds: acceptedSources.map((s) => s.id),
-      expiresAt: channel === 'internal-link' ? null : new Date(Date.now() + expiryDays * 86400000).toISOString(),
+      expiresAt:
+        channel === 'internal-link' || channel === 'onedrive'
+          ? null
+          : new Date(Date.now() + expiryDays * 86400000).toISOString(),
     });
     setConfirming(false);
   }
@@ -66,9 +73,36 @@ export function PublishView({ project }: { project: Project }) {
               ? 'Published. This version is immutable; corrections create a new version.'
               : ready
                 ? 'Audio approved, disclosure ready. Review recipients and publish.'
-                : 'Publication is disabled until audio approval and checks pass.'}
+                : awaitingRelease
+                  ? 'Audio is approved. A Publisher must release it for distribution before it can be published.'
+                  : 'Publication is disabled until audio approval and checks pass.'}
           </span>
         </div>
+
+        {awaitingRelease && (
+          <section className="panel panel-pad stack">
+            <h3>Release for distribution</h3>
+            <p className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+              The audio reviewer has approved this episode. Releasing it moves the project to
+              <b> Ready to publish</b> — a Publisher decision, recorded in the audit trail.
+            </p>
+            {!isPublisher && (
+              <div className="gate blocked" style={{ marginBottom: 0 }}>
+                <span aria-hidden="true">⚠</span>
+                <span style={{ fontSize: 'var(--fs-sm)' }}>
+                  Switch to the Publisher role in the top bar to release this episode.
+                </span>
+              </div>
+            )}
+            <button
+              className="btn btn-primary"
+              disabled={!isPublisher}
+              onClick={() => void transitionProject(project.id, 'READY_TO_PUBLISH')}
+            >
+              Release for distribution
+            </button>
+          </section>
+        )}
 
         <section className="panel panel-pad stack">
           <h3>Publication review</h3>
@@ -183,10 +217,22 @@ export function PublishView({ project }: { project: Project }) {
             <option value="secure-email">Secure email (time-limited authenticated link)</option>
             <option value="internal-link">Internal sharing link</option>
             <option value="webhook-api">Webhook / API adapter</option>
+            <option value="onedrive">OneDrive / SharePoint folder</option>
           </select>
         </div>
 
-        {channel !== 'internal-link' && (
+        {channel === 'onedrive' && (
+          <div className="gate ready" style={{ marginBottom: 0 }}>
+            <span aria-hidden="true">☁️</span>
+            <span style={{ fontSize: 'var(--fs-sm)' }}>
+              The episode audio, transcript, and disclosure are uploaded into the configured
+              OneDrive folder. This is a <b>real upload</b> — if it fails, nothing is published and
+              the project stays in <i>Ready to publish</i> so you can retry.
+            </span>
+          </div>
+        )}
+
+        {channel !== 'internal-link' && channel !== 'onedrive' && (
           <div className="field">
             <label htmlFor="pub-exp">Link expiry: {expiryDays} days</label>
             <input id="pub-exp" className="slider" type="range" min={1} max={90} value={expiryDays} onChange={(e) => setExpiryDays(Number(e.target.value))} />

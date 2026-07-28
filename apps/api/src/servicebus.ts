@@ -57,7 +57,16 @@ export function startWorker(
   handler: QueueHandler,
   log: { info: (o: unknown, m?: string) => void; error: (o: unknown, m?: string) => void },
 ): void {
-  const receiver = sbClient().createReceiver(queue, { receiveMode: 'peekLock' });
+  const receiver = sbClient().createReceiver(queue, {
+    receiveMode: 'peekLock',
+    // A full-length episode is synthesized inside processMessage. Premium
+    // "Dragon HD" voices run roughly 10x slower than standard neural ones, so a
+    // 20-minute episode takes ~3 minutes of wall clock — close to the SDK's
+    // 5-minute default. If the lock lapses mid-render Service Bus redelivers the
+    // message and the in-flight work is wasted. 30 minutes gives long episodes
+    // ample headroom.
+    maxAutoLockRenewalDurationInMs: 30 * 60 * 1000,
+  });
   receivers.push(receiver);
   receiver.subscribe(
     {
@@ -74,7 +83,10 @@ export function startWorker(
         log.error({ err: args.error, queue, source: args.errorSource }, 'service bus receiver error');
       },
     },
-    { maxConcurrentCalls: 1, autoCompleteMessages: false },
+    {
+      maxConcurrentCalls: 1,
+      autoCompleteMessages: false,
+    },
   );
   log.info({ queue }, 'service bus worker started');
 }

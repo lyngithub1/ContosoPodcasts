@@ -140,7 +140,7 @@ export interface PublishInput {
   projectId: string;
   audioVersionId: string;
   scriptVersionId: string;
-  channel: 'secure-email' | 'internal-link' | 'webhook-api';
+  channel: 'secure-email' | 'internal-link' | 'webhook-api' | 'onedrive';
   recipientIds: string[];
   disclosureStatement: string;
   acceptedSourceIds: string[];

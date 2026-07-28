@@ -9,7 +9,9 @@ $av = $Studio.FoundryApiVersion
 $tok = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv 2>&1
 $H = @{ Authorization = "Bearer $tok"; 'Content-Type' = 'application/json' }
 
-function Try($label, $method, $url, $body) {
+# Named Invoke-Probe, not Try: a function called `Try` collides with the
+# PowerShell `try` keyword and makes every call site a parse error.
+function Invoke-Probe($label, $method, $url, $body) {
   "----- $label -----" | Add-Content $o
   "$method $url" | Add-Content $o
   try {
@@ -24,15 +26,15 @@ function Try($label, $method, $url, $body) {
 }
 
 # Agent detail
-Try 'agent-detail' 'GET' "$proj/agents/podcast-script-generator?api-version=$av" $null
+Invoke-Probe 'agent-detail' 'GET' "$proj/agents/podcast-script-generator?api-version=$av" $null
 
 $in = '{"input":"Reply with only OK."}'
 $inMsgs = '{"input":[{"role":"user","content":"Reply with only OK."}]}'
 
-Try 'agents/{id}/runs input-str'  'POST' "$proj/agents/podcast-script-generator/runs?api-version=$av" $in
-Try 'agents/{id}/runs input-msgs' 'POST' "$proj/agents/podcast-script-generator/runs?api-version=$av" $inMsgs
-Try 'agents/{id}:run'             'POST' "$proj/agents/podcast-script-generator:run?api-version=$av" $inMsgs
-Try 'responses agent-name'        'POST' "$proj/responses?api-version=$av" '{"agent":{"type":"agent_reference","name":"podcast-script-generator"},"input":"Reply with only OK."}'
-Try 'responses model-name'        'POST' "$proj/responses?api-version=$av" '{"model":"podcast-script-generator","input":"Reply with only OK."}'
+Invoke-Probe 'agents/{id}/runs input-str'  'POST' "$proj/agents/podcast-script-generator/runs?api-version=$av" $in
+Invoke-Probe 'agents/{id}/runs input-msgs' 'POST' "$proj/agents/podcast-script-generator/runs?api-version=$av" $inMsgs
+Invoke-Probe 'agents/{id}:run'             'POST' "$proj/agents/podcast-script-generator:run?api-version=$av" $inMsgs
+Invoke-Probe 'responses agent-name'        'POST' "$proj/responses?api-version=$av" '{"agent":{"type":"agent_reference","name":"podcast-script-generator"},"input":"Reply with only OK."}'
+Invoke-Probe 'responses model-name'        'POST' "$proj/responses?api-version=$av" '{"model":"podcast-script-generator","input":"Reply with only OK."}'
 
 Get-Content $o

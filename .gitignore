@@ -32,6 +32,36 @@ docs/podcast-studio-mcem-cost-model.html
 docs/**/*mcem*
 docs/**/*cost-model*
 docs/**/*-internal.*
+docs/**/*pricing*
+docs/**/*rom-cost*
+docs/**/*sizing*
+
+# Credentials & keys — nothing in this project needs them (all Azure access is
+# managed identity), so any file matching these is a mistake.
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+*.jks
+*.keystore
+*secret*.json
+*secrets*.yaml
+*secrets*.yml
+*credential*.json
+appsettings.*.local.json
+
+# Terraform state can embed endpoints, ids, and generated secrets.
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Local exports of rendered episodes (may contain unapproved content).
+Podcast Studio Examples/
+episodes-export/
 
 # Editor
 .vscode/*

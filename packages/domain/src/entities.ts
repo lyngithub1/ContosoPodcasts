@@ -478,7 +478,15 @@ export interface DistributionList extends VersionedEntity {
   containsExternal: boolean;
 }
 
-export type DeliveryChannel = 'secure-email' | 'internal-link' | 'webhook-api';
+/**
+ * How an approved episode reaches its recipients.
+ *
+ * `onedrive` writes the audio + transcript into a OneDrive / SharePoint folder
+ * via Microsoft Graph. Unlike the other channels it is a **real** delivery
+ * adapter: the per-recipient {@link DeliveryReceipt} reflects the actual upload
+ * outcome rather than an assumed success.
+ */
+export type DeliveryChannel = 'secure-email' | 'internal-link' | 'webhook-api' | 'onedrive';
 
 export interface Publication extends VersionedEntity {
   projectId: EntityId;
@@ -508,4 +516,9 @@ export interface DeliveryReceipt {
   failureReason: string | null;
   /** Idempotency key ensures retries never duplicate successful deliveries. */
   idempotencyKey: string;
+  /**
+   * Where the artifact landed, when the channel produces a durable location
+   * (e.g. the OneDrive/SharePoint item URL). Null for channels that do not.
+   */
+  deliveredUrl?: string | null;
 }

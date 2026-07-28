@@ -110,6 +110,131 @@
       "approvalStatus": "draft",
       "rationale": "Illustrative ClinicalTrials.gov identifier for demo; verify before use.",
       "inGoldenSet": false
+    },
+
+    {
+      "$comment": "NNRTI class agents and resistance terminology used by the archived-resistance episode. Golden-set entries are checked by closed-loop QA and BLOCK audio approval on mismatch, so only genuinely pronunciation-critical drug names are marked golden.",
+      "canonicalForm": "Tenofovir",
+      "locale": "de-DE",
+      "spokenForm": "Te-no-fo-vir",
+      "ipa": "teˈnoːfoviːɐ̯",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NRTI"],
+      "approvalStatus": "draft",
+      "rationale": "Stem form used on its own in narration; candidate for review.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Nevirapin",
+      "locale": "de-DE",
+      "spokenForm": "Ne-vi-ra-pin",
+      "ipa": "neviʁaˈpiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NNRTI"],
+      "approvalStatus": "draft",
+      "rationale": "First-generation NNRTI; German spelling variant of nevirapine.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Efavirenz",
+      "locale": "de-DE",
+      "spokenForm": "E-fa-vi-renz",
+      "ipa": "efaviˈʁɛnt͡s",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NNRTI"],
+      "approvalStatus": "draft",
+      "rationale": "First-generation NNRTI; terminal -enz is German-voiced.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Etravirin",
+      "locale": "de-DE",
+      "spokenForm": "E-tra-vi-rin",
+      "ipa": "etʁaviˈʁiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NNRTI"],
+      "approvalStatus": "draft",
+      "rationale": "Second-generation NNRTI; German spelling variant of etravirine.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Rilpivirin",
+      "locale": "de-DE",
+      "spokenForm": "Ril-pi-vi-rin",
+      "ipa": "ʁɪlpiviˈʁiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NNRTI"],
+      "approvalStatus": "draft",
+      "rationale": "Second-generation NNRTI; German spelling variant of rilpivirine.",
+      "inGoldenSet": true
+    },
+    {
+      "canonicalForm": "Lamivudin",
+      "locale": "de-DE",
+      "spokenForm": "La-mi-vu-din",
+      "ipa": "lamivuˈdiːn",
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["drug", "INN", "NRTI"],
+      "approvalStatus": "draft",
+      "rationale": "German spelling variant of lamivudine; paired with the M184V discussion.",
+      "inGoldenSet": true
+    },
+
+    {
+      "$comment": "Resistance / methodology vocabulary. Deliberately NOT in the golden set: these are multi-syllable German compounds that speech-to-text renders inconsistently, so treating them as blocking would produce false failures. They remain review candidates in the library.",
+      "canonicalForm": "Resistenzmutationen",
+      "locale": "de-DE",
+      "spokenForm": "Re-sis-tenz-mu-ta-tio-nen",
+      "ipa": null,
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["resistance", "compound"],
+      "approvalStatus": "draft",
+      "rationale": "High-frequency compound in this episode; candidate for review.",
+      "inGoldenSet": false
+    },
+    {
+      "canonicalForm": "Reverse-Transkriptase",
+      "locale": "de-DE",
+      "spokenForm": "Re-ver-se Trans-krip-ta-se",
+      "ipa": null,
+      "therapeuticArea": "Infectious disease / HIV",
+      "tags": ["enzyme", "compound"],
+      "approvalStatus": "draft",
+      "rationale": "English/German hybrid term; stress pattern needs reviewer confirmation.",
+      "inGoldenSet": false
+    },
+    {
+      "canonicalForm": "Genotypisierung",
+      "locale": "de-DE",
+      "spokenForm": "Ge-no-ty-pi-sie-rung",
+      "ipa": null,
+      "therapeuticArea": "Diagnostics",
+      "tags": ["method", "compound"],
+      "approvalStatus": "draft",
+      "rationale": "Assay terminology; candidate for review.",
+      "inGoldenSet": false
+    },
+    {
+      "canonicalForm": "Punktmutationen",
+      "locale": "de-DE",
+      "spokenForm": "Punkt-mu-ta-tio-nen",
+      "ipa": null,
+      "therapeuticArea": "Genetics",
+      "tags": ["genetics", "compound"],
+      "approvalStatus": "draft",
+      "rationale": "Candidate for review.",
+      "inGoldenSet": false
+    },
+    {
+      "canonicalForm": "Sequenzierung",
+      "locale": "de-DE",
+      "spokenForm": "Se-quen-zie-rung",
+      "ipa": null,
+      "therapeuticArea": "Diagnostics",
+      "tags": ["method", "compound"],
+      "approvalStatus": "draft",
+      "rationale": "Candidate for review.",
+      "inGoldenSet": false
     }
   ]
 }

@@ -127,6 +127,25 @@ export function AudioView({ project }: { project: Project }) {
 
   const blocked = report?.hasBlockingIssues ?? false;
   const canApprove = project.state === 'AUDIO_REVIEW' && !blocked;
+  /** Audio has already cleared review; the next move belongs to the Publisher. */
+  const alreadyApproved =
+    project.state === 'AUDIO_APPROVED' ||
+    project.state === 'READY_TO_PUBLISH' ||
+    project.state === 'PUBLISHED';
+  /**
+   * Why the approve button is unavailable. A silently greyed-out control reads
+   * as a bug — especially right after a reviewer records a QA override and
+   * expects it to unblock something.
+   */
+  const approveBlockedReason = canApprove
+    ? null
+    : alreadyApproved
+      ? 'This audio has already been approved.'
+      : blocked
+        ? 'A critical pronunciation mismatch is unresolved. Accept it with a recorded reason above, or reject the audio.'
+        : project.state === 'AUDIO_PREVIEW'
+          ? 'Send the preview to audio review first.'
+          : `Audio can only be approved from the Audio review stage (currently ${project.state}).`;
 
   return (
     <div className="ws-layout">
@@ -259,13 +278,31 @@ export function AudioView({ project }: { project: Project }) {
 
             <hr className="hr" />
             <h4>Decision</h4>
-            <button className="btn btn-primary" disabled={!canApprove} onClick={() => {
-              addReview({ projectId: project.id, targetId: audio.id, targetVersion: audio.version, targetContentHash: audio.contentHash, stage: 'audio', action: 'approve', comment: 'Audio approved', rejectionCategory: null, delegatedTo: null });
-              transitionProject(project.id, 'AUDIO_APPROVED');
-              transitionProject(project.id, 'READY_TO_PUBLISH');
-            }}>
-              Approve audio
-            </button>
+            {alreadyApproved ? (
+              <div className="gate ready" style={{ marginBottom: 8 }}>
+                <span aria-hidden="true">✓</span>
+                <span style={{ fontSize: 'var(--fs-sm)' }}>
+                  Audio approved. Releasing it for distribution is a Publisher decision — see the
+                  <b> Publish</b> stage.
+                </span>
+              </div>
+            ) : (
+              <button className="btn btn-primary" disabled={!canApprove} onClick={() => {
+                addReview({ projectId: project.id, targetId: audio.id, targetVersion: audio.version, targetContentHash: audio.contentHash, stage: 'audio', action: 'approve', comment: 'Audio approved', rejectionCategory: null, delegatedTo: null });
+                // Only the audio decision belongs to the AudioReviewer. Advancing to
+                // READY_TO_PUBLISH is a separate, Publisher-gated step and is offered
+                // in the Publish stage — bundling them here let one role make the
+                // other's decision, and raced the two requests against each other.
+                void transitionProject(project.id, 'AUDIO_APPROVED');
+              }}>
+                Approve audio
+              </button>
+            )}
+            {approveBlockedReason && !alreadyApproved && (
+              <p className="muted" style={{ fontSize: 'var(--fs-xs)', marginTop: 4 }}>
+                {approveBlockedReason}
+              </p>
+            )}
             {project.state === 'AUDIO_PREVIEW' && (
               <button className="btn" onClick={() => transitionProject(project.id, 'AUDIO_REVIEW')}>
                 Send to audio review

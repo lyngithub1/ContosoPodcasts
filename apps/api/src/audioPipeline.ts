@@ -41,6 +41,56 @@ function escapeSsml(value: string): string {
   return value.replace(/[<>&'"]/g, (c) => SSML_ESCAPES[c] ?? c);
 }
 
+/**
+ * Azure AI Speech caps a single `/cognitiveservices/v1` request at **10 minutes
+ * of generated audio**; longer input is rejected with HTTP 400 (empty body).
+ *
+ * Measured against this deployment: ~7,800 characters of German narration
+ * produced 544 s of audio, i.e. roughly **14 characters per second**. A budget
+ * of 7 minutes therefore leaves comfortable headroom for the inter-segment
+ * breaks and for locales that speak more slowly than the sample.
+ */
+const SPEECH_MAX_SECONDS_PER_REQUEST = 7 * 60;
+
+/** Characters of narration per second of audio (empirical — see above). */
+const CHARS_PER_SECOND = 14;
+
+/** Silence inserted after each segment, in seconds (matches the break tag). */
+const BREAK_SECONDS = 0.45;
+
+/**
+ * Split ordered segments into batches that each stay inside the Speech
+ * per-request duration cap.
+ *
+ * A segment is never split: if one on its own exceeds the budget it becomes its
+ * own batch and is sent anyway, which is still the best available attempt.
+ * Exported for testing.
+ */
+export function chunkSegmentsForSynthesis<T extends { text?: unknown }>(
+  segments: T[],
+  maxSeconds = SPEECH_MAX_SECONDS_PER_REQUEST,
+): T[][] {
+  const batches: T[][] = [];
+  let current: T[] = [];
+  let currentSeconds = 0;
+
+  for (const segment of segments) {
+    const text = String(segment.text ?? '').trim();
+    if (!text) continue;
+    const seconds = text.length / CHARS_PER_SECOND + BREAK_SECONDS;
+
+    if (current.length > 0 && currentSeconds + seconds > maxSeconds) {
+      batches.push(current);
+      current = [];
+      currentSeconds = 0;
+    }
+    current.push(segment);
+    currentSeconds += seconds;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
 /** Build a multi-voice SSML document from a script's ordered segments. */
 function buildEpisodeSsml(
   segments: Array<{ speakerId?: unknown; text?: unknown }>,
@@ -189,11 +239,22 @@ export async function renderEpisode(
     .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
   if (segments.length === 0) throw new PipelineError(422, 'Script has no segments to render.');
 
-  const ssml = buildEpisodeSsml(segments, voiceBySpeaker, fallbackVoice, locale);
+  // Long episodes must be rendered in pieces: Speech rejects any single request
+  // that would generate more than ~10 minutes of audio. Each batch is
+  // synthesized separately and the resulting MP3 frames are concatenated, which
+  // is valid for the CBR MP3 format Speech returns.
+  const batches = chunkSegmentsForSynthesis(segments);
+  const ssmlParts = batches.map((batch) => buildEpisodeSsml(batch, voiceBySpeaker, fallbackVoice, locale));
+  const ssml = ssmlParts.join('\n');
 
-  let rendered;
+  let rendered: { audio: Buffer };
   try {
-    rendered = await synthesize({ ssml, format: 'audio-24khz-48kbitrate-mono-mp3' });
+    const parts: Buffer[] = [];
+    for (const part of ssmlParts) {
+      const result = await synthesize({ ssml: part, format: 'audio-24khz-48kbitrate-mono-mp3' });
+      parts.push(result.audio);
+    }
+    rendered = { audio: Buffer.concat(parts) };
   } catch (err) {
     throw new PipelineError(502, `Audio synthesis failed: ${(err as Error).message}`);
   }

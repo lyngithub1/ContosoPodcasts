@@ -23,6 +23,7 @@ import { transcribeEnabled } from './transcribe.js';
 import { serviceBusEnabled } from './servicebus.js';
 import { searchEnabled } from './search.js';
 import { docIntelEnabled } from './docintel.js';
+import { oneDriveEnabled } from './onedrive.js';
 import { entraAuthEnabled } from './auth.js';
 import { registerDomainRoutes } from './domainRoutes.js';
 
@@ -40,6 +41,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       search: searchEnabled(),
       documentIntelligence: docIntelEnabled(),
       foundry: foundryEnabled(),
+      oneDrive: oneDriveEnabled(),
     },
   }));
 

@@ -36,6 +36,7 @@ import {
   type SearchDoc,
 } from './search.js';
 import { docIntelEnabled, analyzeDocument } from './docintel.js';
+import { deliverEpisode, oneDriveEnabled, type DeliveryOutcome } from './onedrive.js';
 import { actorRef, contentHash, toStringArray, writeAudit, type Doc } from './domainShared.js';
 
 /**
@@ -144,7 +145,7 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
     Body: {
       audioVersionId?: string;
       scriptVersionId?: string;
-      channel?: 'secure-email' | 'internal-link' | 'webhook-api';
+      channel?: 'secure-email' | 'internal-link' | 'webhook-api' | 'onedrive';
       recipientIds?: string[];
       disclosureStatement?: string;
       acceptedSourceIds?: string[];
@@ -183,6 +184,65 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
 
     const now = new Date().toISOString();
     const pubId = 'pub-' + randomUUID();
+
+    // --- Real delivery, attempted BEFORE the publication is committed -------
+    // For `onedrive` the artifact must actually land before we mark the project
+    // PUBLISHED, otherwise "published" would be a lie. A failure here writes
+    // nothing and leaves the project in READY_TO_PUBLISH so the publisher can
+    // retry. The other channels remain modelled-only (see KNOWN_LIMITATIONS).
+    let delivery: DeliveryOutcome | undefined;
+    if (channel === 'onedrive') {
+      if (!oneDriveEnabled()) {
+        return reply.code(501).send({
+          error:
+            'OneDrive delivery is not configured. Set GRAPH_DRIVE_ID (and optionally ONEDRIVE_FOLDER_PATH) and grant the platform identity a Microsoft Graph application permission on that drive.',
+        });
+      }
+      if (!blobEnabled()) {
+        return reply.code(503).send({ error: 'Blob storage is not configured, so there is no audio to deliver.' });
+      }
+      const audioDoc = body.audioVersionId
+        ? ((await getItem('audioVersions', body.audioVersionId, id)) as Doc | undefined)
+        : undefined;
+      if (!audioDoc) {
+        return reply.code(422).send({ error: 'A rendered audioVersionId is required for OneDrive delivery.' });
+      }
+      const distributionPath = String(audioDoc.distributionPath ?? '');
+      const [audioContainer, ...audioRest] = distributionPath.split('/');
+      if (!audioContainer || audioRest.length === 0) {
+        return reply.code(422).send({ error: 'The audio version has no stored distribution path to deliver.' });
+      }
+      try {
+        const audioBuffer = await downloadBlob(audioContainer, audioRest.join('/'));
+        let transcript: string | null = null;
+        const transcriptPath = String(audioDoc.transcriptPath ?? '');
+        if (transcriptPath) {
+          const [tContainer, ...tRest] = transcriptPath.split('/');
+          if (tContainer && tRest.length) {
+            transcript = await downloadBlob(tContainer, tRest.join('/'))
+              .then((b) => b.toString('utf8'))
+              .catch(() => null);
+          }
+        }
+        delivery = await deliverEpisode({
+          title: String(project.title ?? id),
+          projectId: id,
+          audio: audioBuffer,
+          transcript,
+          disclosureStatement: body.disclosureStatement,
+          publishedAt: now,
+          publishedBy: actor.displayName,
+          contentHash: String(audioDoc.contentHash ?? ''),
+          durationSeconds: Number(audioDoc.durationSeconds ?? 0),
+        });
+      } catch (err) {
+        req.log.error({ err, projectId: id }, 'OneDrive delivery failed');
+        return reply.code(502).send({
+          error: `OneDrive delivery failed, so nothing was published: ${(err as Error).message}`,
+        });
+      }
+    }
+
     const publication: Doc = {
       id: pubId,
       version: 1,
@@ -219,6 +279,9 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
         deliveredAt: now,
         failureReason: null,
         idempotencyKey: contentHash(pubId + rid),
+        // Only channels with a real adapter produce a durable location. The
+        // upload happened once; each recipient is granted access to that folder.
+        deliveredUrl: delivery?.audioUrl ?? null,
       };
       receipts.push(await upsertItem('deliveryReceipts', receipt));
     }
@@ -243,8 +306,15 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
       actor,
       id,
       'audio.published',
-      `Published to ${recipientIds.length} recipient(s) via ${channel}`,
-      { channel, recipients: recipientIds.length },
+      `Published to ${recipientIds.length} recipient(s) via ${channel}` +
+        (delivery ? ` → ${delivery.folder}` : ''),
+      {
+        channel,
+        recipients: recipientIds.length,
+        // Folder path only — no tokens, no recipient identities.
+        destination: delivery?.folder ?? null,
+        filesDelivered: delivery?.files.length ?? 0,
+      },
       publication.contentHash as string,
     );
 
@@ -254,6 +324,7 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
       project: savedProject,
       audioVersion: savedAudio ?? null,
       audit,
+      delivery: delivery ?? null,
     });
   });
 

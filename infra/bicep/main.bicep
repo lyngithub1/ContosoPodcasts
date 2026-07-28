@@ -49,6 +49,12 @@ param corsOrigins string = '*'
 @description('Deploy private endpoints and disable public network access on Storage, Key Vault, AI Search, and Document Intelligence. Set false only for a public sandbox.')
 param usePrivateEndpoints bool = true
 
+@description('Microsoft Graph drive id that publish delivers episodes into (OneDrive or SharePoint library). Empty disables the onedrive channel. The platform identity needs a Graph application permission on this drive — prefer Sites.Selected. See docs/ONEDRIVE.md.')
+param graphDriveId string = ''
+
+@description('Base folder inside that drive for published episodes.')
+param oneDriveFolderPath string = 'Podcast Studio/Published'
+
 var tags = {
   application: 'azure-scientific-podcast-studio'
   environment: environment
@@ -286,6 +292,8 @@ module api 'modules/containerapp.bicep' = {
     storageBlobEndpoint: storage.outputs.blobEndpoint
     searchEndpoint: search.outputs.endpoint
     docIntelEndpoint: docIntel.outputs.endpoint
+    graphDriveId: graphDriveId
+    oneDriveFolderPath: oneDriveFolderPath
     serviceBusFqdn: serviceBus.outputs.fqdn
     keyVaultUri: keyVault.outputs.uri
     clientIdEnv: identity.outputs.clientId

@@ -33,6 +33,13 @@ param cosmosEndpoint string
 param storageBlobEndpoint string
 param searchEndpoint string
 param docIntelEndpoint string = ''
+
+@description('Microsoft Graph drive id for OneDrive/SharePoint publish delivery. Empty disables the channel.')
+param graphDriveId string = ''
+
+@description('Base folder inside that drive for published episodes.')
+param oneDriveFolderPath string = 'Podcast Studio/Published'
+
 param serviceBusFqdn string
 param keyVaultUri string
 param clientIdEnv string
@@ -136,6 +143,8 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'STORAGE_BLOB_ENDPOINT', value: storageBlobEndpoint }
             { name: 'SEARCH_ENDPOINT', value: searchEndpoint }
             { name: 'DOCINTEL_ENDPOINT', value: docIntelEndpoint }
+            { name: 'GRAPH_DRIVE_ID', value: graphDriveId }
+            { name: 'ONEDRIVE_FOLDER_PATH', value: oneDriveFolderPath }
             { name: 'SERVICEBUS_FQDN', value: serviceBusFqdn }
             { name: 'KEYVAULT_URI', value: keyVaultUri }
             { name: 'CORS_ORIGINS', value: corsOrigins }

@@ -1,5 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { STAGE_ORDER, STATE_TO_STAGE, type ProductionStage, type WorkflowState } from '@studio/domain';
+import {
+  STAGE_ORDER,
+  STATE_TO_STAGE,
+  isStageComplete,
+  type ProductionStage,
+  type WorkflowState,
+} from '@studio/domain';
 
 const STAGE_ROUTE: Record<ProductionStage, string> = {
   Research: 'research',
@@ -36,7 +42,7 @@ export function ProductionTimeline({ projectId, state, activeStage, blockers }: 
     <nav className="timeline" aria-label="Production timeline">
       <ol className="timeline-track">
         {STAGE_ORDER.map((stage, idx) => {
-          const done = idx < currentIdx || state === 'PUBLISHED';
+          const done = isStageComplete(stage, state);
           const active = stage === activeStage;
           const reached = idx <= currentIdx;
           const blocker = blockers?.[stage];

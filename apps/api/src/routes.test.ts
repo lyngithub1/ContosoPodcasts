@@ -366,6 +366,46 @@ describe('POST /api/projects/:id/publish', () => {
     }
     expect(new Set(receipts.map((r) => r.recipientId))).toEqual(new Set(['r1', 'r2']));
   });
+
+  describe('onedrive channel', () => {
+    // GRAPH_DRIVE_ID is unset in the test env, so the channel is unconfigured.
+    it('returns 501 when OneDrive delivery is not configured', async () => {
+      mocks.seed('projects', project('p1', 'READY_TO_PUBLISH'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/projects/p1/publish',
+        headers: PUBLISHER,
+        payload: { ...validBody, channel: 'onedrive' },
+      });
+      expect(res.statusCode).toBe(501);
+      expect(res.json().error).toMatch(/GRAPH_DRIVE_ID/);
+    });
+
+    it('publishes nothing when delivery cannot happen (fails closed)', async () => {
+      mocks.seed('projects', project('p1', 'READY_TO_PUBLISH'));
+      await app.inject({
+        method: 'POST',
+        url: '/api/projects/p1/publish',
+        headers: PUBLISHER,
+        payload: { ...validBody, channel: 'onedrive' },
+      });
+      // The project must remain publishable, with no publication or receipts.
+      expect(mocks.store.get('projects')?.get('p1')?.state).toBe('READY_TO_PUBLISH');
+      expect(mocks.store.get('publications')?.size ?? 0).toBe(0);
+      expect(mocks.store.get('deliveryReceipts')?.size ?? 0).toBe(0);
+    });
+
+    it('still enforces the Publisher role before attempting delivery', async () => {
+      mocks.seed('projects', project('p1', 'READY_TO_PUBLISH'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/projects/p1/publish',
+        headers: CREATOR,
+        payload: { ...validBody, channel: 'onedrive' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
 });
 
 describe('GET /healthz', () => {

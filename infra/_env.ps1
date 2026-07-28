@@ -6,7 +6,7 @@
 #
 # Resolution order for every setting:
 #   1. an existing PODSTUDIO_* environment variable
-#   2. a value set by ./_env.local.ps1 (git-ignored — your personal overrides)
+#   2. a value set by ./_env.local.ps1 (git-ignored - your personal overrides)
 #   3. the safe default below (usually empty, which makes scripts fail loudly)
 #
 # To configure your own environment:
@@ -41,7 +41,7 @@ $Studio = [ordered]@{
     Location               = Get-StudioSetting 'PODSTUDIO_LOCATION' 'francecentral'
     ResourceSuffix         = $__suffix
 
-    # Deployed endpoints (no default — set them for your environment).
+    # Deployed endpoints (no default - set them for your environment).
     ApiBaseUrl             = (Get-StudioSetting 'PODSTUDIO_API_BASE_URL').TrimEnd('/')
     SpeechEndpoint         = Get-StudioSetting 'PODSTUDIO_SPEECH_ENDPOINT'
 
@@ -87,7 +87,7 @@ Set them for this session, e.g.:
   `$env:PODSTUDIO_RESOURCE_SUFFIX = '<your-resource-suffix>'
   `$env:PODSTUDIO_API_BASE_URL    = 'https://<your-container-app>.azurecontainerapps.io'
 
-…or copy infra/_env.local.ps1.example to infra/_env.local.ps1 and fill it in
+...or copy infra/_env.local.ps1.example to infra/_env.local.ps1 and fill it in
 (that file is git-ignored and never committed).
 "@
     }

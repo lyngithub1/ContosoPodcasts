@@ -13,4 +13,4 @@ foreach ($p in @(@{n = 'speech'; id = $ids.speech }, @{n = 'docintel'; id = $ids
 }
 az search service update -n $Studio.SearchServiceName -g $RG --public-network-access enabled -o none 2>&1 | Add-Content -Path $log
 Log ("search publicAccess ENABLED exit={0}" -f $LASTEXITCODE)
-Log "=== rollback DONE — services reachable publicly again ==="
+Log "=== rollback DONE - services reachable publicly again ==="

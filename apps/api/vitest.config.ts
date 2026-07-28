@@ -8,5 +8,9 @@ export default defineConfig({
       LOG_LEVEL: 'silent',
       NODE_ENV: 'test',
     },
+    // The auth suite calls vi.resetModules() and re-imports the module graph
+    // (including `jose`) for each case. Under parallel load that can exceed the
+    // 5s default and fail as a timeout rather than a real assertion.
+    testTimeout: 20_000,
   },
 });

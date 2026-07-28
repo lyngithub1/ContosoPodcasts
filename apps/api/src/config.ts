@@ -28,6 +28,15 @@ export interface AppConfig {
   foundryProjectEndpoint?: string;
   foundryApiVersion: string;
   /**
+   * Microsoft Graph drive id for OneDrive/SharePoint delivery. Pinning a single
+   * drive keeps the Graph permission scopeable to one library (Sites.Selected)
+   * and makes the publish destination auditable. Unset = channel disabled.
+   */
+  graphDriveId?: string;
+  /** Base folder inside that drive, e.g. "Podcast Studio/Published". */
+  oneDriveFolderPath: string;
+  graphEndpoint: string;
+  /**
    * Identity source for the acting user.
    * - 'header' (default): dev shim — id/name/roles from x-actor-* headers.
    * - 'entra': validate a Microsoft Entra Bearer JWT and derive identity from
@@ -81,6 +90,9 @@ export const config: AppConfig = {
   storageBlobEndpoint: process.env.STORAGE_BLOB_ENDPOINT,
   foundryProjectEndpoint: process.env.FOUNDRY_PROJECT_ENDPOINT,
   foundryApiVersion: process.env.FOUNDRY_API_VERSION ?? 'v1',
+  graphDriveId: process.env.GRAPH_DRIVE_ID,
+  oneDriveFolderPath: process.env.ONEDRIVE_FOLDER_PATH ?? 'Podcast Studio/Published',
+  graphEndpoint: process.env.GRAPH_ENDPOINT ?? 'https://graph.microsoft.com',
   authMode: process.env.AUTH_MODE === 'entra' ? 'entra' : 'header',
   authTenantId: process.env.AUTH_TENANT_ID,
   authAudience: process.env.AUTH_AUDIENCE,

@@ -185,6 +185,7 @@ infra/bicep/         Azure infrastructure modules
 infra/               Operational + smoke-test scripts (see infra/_env.ps1)
 docs/adr/            Architecture Decision Records
 docs/AUTH.md         Identity modes and how to turn on Entra sign-in
+docs/ONEDRIVE.md     Publishing episodes to a OneDrive / SharePoint folder
 docs/CI-CD.md        Pipelines, Defender, and Azure Policy guardrails
 spec/                The original product specification
 PLAN.md              Milestones, risks, status

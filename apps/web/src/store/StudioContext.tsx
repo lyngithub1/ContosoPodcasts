@@ -73,7 +73,7 @@ interface StudioContextValue extends StudioState {
     sourceName: string;
     script: ParsedScript;
   }) => Project;
-  transitionProject: (projectId: string, to: WorkflowState, reason?: string) => boolean;
+  transitionProject: (projectId: string, to: WorkflowState, reason?: string) => Promise<boolean>;
   setProjectLocale: (projectId: string, locale: Locale) => void;
   /** Permanently remove a project and all of its project-scoped production data. */
   deleteProject: (projectId: string) => void;
@@ -103,7 +103,7 @@ interface StudioContextValue extends StudioState {
     projectId: string;
     audioVersionId: string;
     scriptVersionId: string;
-    channel: 'secure-email' | 'internal-link' | 'webhook-api';
+    channel: 'secure-email' | 'internal-link' | 'webhook-api' | 'onedrive';
     recipientIds: string[];
     disclosureStatement: string;
     acceptedSourceIds: string[];
@@ -484,8 +484,17 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     [appendAudit, notify, persistItem],
   );
 
+  /**
+   * Apply a workflow transition.
+   *
+   * Resolves only once the server has accepted (or refused) the move, so callers
+   * that chain transitions — e.g. approve audio then advance to ready-to-publish
+   * — can `await` each step. Firing two calls synchronously would have the second
+   * one re-read React state that has not re-rendered yet, see the *previous*
+   * state, and fail its own pre-check even though the first move succeeded.
+   */
   const transitionProject = useCallback(
-    (projectId: string, to: WorkflowState, reason?: string) => {
+    async (projectId: string, to: WorkflowState, reason?: string): Promise<boolean> => {
       const project = state.projects.find((p) => p.id === projectId);
       if (!project) return false;
       // Client pre-check mirrors the server gate (edge + reason + role for the
@@ -513,28 +522,27 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         // The server is authoritative: it re-validates the edge + role and writes
         // the canonical audit event. Reconcile on success, roll back on refusal.
         const actor = { id: currentUser.id, name: currentUser.displayName, roles: [state.activeRole] };
-        void apiTransition(projectId, to, reason, actor).then((res) => {
-          if (!res.ok) {
-            setState((s) => ({
-              ...s,
-              projects: s.projects.map((p) => (p.id === projectId ? { ...p, state: from } : p)),
-            }));
-            notify('error', res.error ?? 'The server rejected this change.');
-            return;
-          }
+        const res = await apiTransition(projectId, to, reason, actor);
+        if (!res.ok) {
           setState((s) => ({
             ...s,
-            projects: res.project
-              ? s.projects.map((p) => (p.id === projectId ? (res.project as unknown as Project) : p))
-              : s.projects,
-            auditEvents: res.audit
-              ? [
-                  res.audit as unknown as AuditEvent,
-                  ...s.auditEvents.filter((a) => a.id !== (res.audit as { id: string }).id),
-                ]
-              : s.auditEvents,
+            projects: s.projects.map((p) => (p.id === projectId ? { ...p, state: from } : p)),
           }));
-        });
+          notify('error', res.error ?? 'The server rejected this change.');
+          return false;
+        }
+        setState((s) => ({
+          ...s,
+          projects: res.project
+            ? s.projects.map((p) => (p.id === projectId ? (res.project as unknown as Project) : p))
+            : s.projects,
+          auditEvents: res.audit
+            ? [
+                res.audit as unknown as AuditEvent,
+                ...s.auditEvents.filter((a) => a.id !== (res.audit as { id: string }).id),
+              ]
+            : s.auditEvents,
+        }));
       } else {
         // Offline: keep the in-memory audit trail so the demo stays coherent.
         appendAudit({
